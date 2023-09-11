@@ -6,10 +6,10 @@ import (
 	"time"
 
 	"github.com/gofiber/fiber/v2"
-	"github.com/nikitamirzani323/wl_super_backend_api/configs"
-	"github.com/nikitamirzani323/wl_super_backend_api/db"
-	"github.com/nikitamirzani323/wl_super_backend_api/entities"
-	"github.com/nikitamirzani323/wl_super_backend_api/helpers"
+	"github.com/nikitamirzani323/BTANGKAS_SUPER_API/configs"
+	"github.com/nikitamirzani323/BTANGKAS_SUPER_API/db"
+	"github.com/nikitamirzani323/BTANGKAS_SUPER_API/entities"
+	"github.com/nikitamirzani323/BTANGKAS_SUPER_API/helpers"
 	"github.com/nleeper/goment"
 )
 

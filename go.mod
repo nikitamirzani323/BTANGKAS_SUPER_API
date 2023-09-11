@@ -1,4 +1,4 @@
-module github.com/nikitamirzani323/wl_super_backend_api
+module github.com/nikitamirzani323/BTANGKAS_SUPER_API
 
 go 1.17
 

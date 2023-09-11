@@ -7,9 +7,9 @@ import (
 	"github.com/go-playground/validator/v10"
 	"github.com/gofiber/fiber/v2"
 	"github.com/golang-jwt/jwt/v4"
-	"github.com/nikitamirzani323/wl_super_backend_api/entities"
-	"github.com/nikitamirzani323/wl_super_backend_api/helpers"
-	"github.com/nikitamirzani323/wl_super_backend_api/models"
+	"github.com/nikitamirzani323/BTANGKAS_SUPER_API/entities"
+	"github.com/nikitamirzani323/BTANGKAS_SUPER_API/helpers"
+	"github.com/nikitamirzani323/BTANGKAS_SUPER_API/models"
 )
 
 func CheckLogin(c *fiber.Ctx) error {

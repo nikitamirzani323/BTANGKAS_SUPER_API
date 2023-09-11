@@ -7,9 +7,9 @@ import (
 	"syscall"
 
 	"github.com/joho/godotenv"
-	"github.com/nikitamirzani323/wl_super_backend_api/db"
-	"github.com/nikitamirzani323/wl_super_backend_api/helpers"
-	"github.com/nikitamirzani323/wl_super_backend_api/routers"
+	"github.com/nikitamirzani323/BTANGKAS_SUPER_API/db"
+	"github.com/nikitamirzani323/BTANGKAS_SUPER_API/helpers"
+	"github.com/nikitamirzani323/BTANGKAS_SUPER_API/routers"
 )
 
 func main() {
