@@ -1,0 +1,10 @@
+version: '2'
+
+services:
+  btangkas-super-api:
+    container_name: btangkas-super-api
+    image: btangkas-super-api:0.0.0.1
+    build: .
+    ports:
+      - 2111:2111
+    restart: always
