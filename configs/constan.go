@@ -6,6 +6,7 @@ const (
 	DB_tbl_admingroup    string = "tbl_admingroup"
 	DB_tbl_mst_listpoint string = "tbl_mst_listpoint"
 	DB_tbl_mst_curr      string = "tbl_mst_currency"
+	DB_tbl_mst_company   string = "tbl_mst_company"
 
 	STATUS_NEW      string = "background:#0dcaf0;font-weight:bold;color:black;"
 	STATUS_RUNNING  string = "background:#FFEB3B;font-weight:bold;color:black;"

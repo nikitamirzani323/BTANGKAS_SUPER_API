@@ -30,7 +30,7 @@ func Fetch_listpointHome() (helpers.Response, error) {
 			create_listpoint, to_char(COALESCE(createdate_listpoint,now()), 'YYYY-MM-DD HH24:MI:SS'), 
 			update_listpoint, to_char(COALESCE(updatedate_listpoint,now()), 'YYYY-MM-DD HH24:MI:SS') 
 			FROM ` + database_listpoint_local + `  
-			ORDER BY createdate_listpoint DESC   `
+			ORDER BY createdate_listpoint ASC   `
 
 	row, err := con.QueryContext(ctx, sql_select)
 	helpers.ErrorCheck(err)
