@@ -27,12 +27,14 @@ func Listpointhome(c *fiber.Ctx) error {
 		lispoint_id, _ := jsonparser.GetInt(value, "lispoint_id")
 		lispoint_code, _ := jsonparser.GetString(value, "lispoint_code")
 		lispoint_name, _ := jsonparser.GetString(value, "lispoint_name")
+		lispoint_point, _ := jsonparser.GetInt(value, "lispoint_point")
 		lispoint_create, _ := jsonparser.GetString(value, "lispoint_create")
 		lispoint_update, _ := jsonparser.GetString(value, "lispoint_update")
 
 		obj.Lispoint_id = int(lispoint_id)
 		obj.Lispoint_code = lispoint_code
 		obj.Lispoint_name = lispoint_name
+		obj.Lispoint_point = int(lispoint_point)
 		obj.Lispoint_create = lispoint_create
 		obj.Lispoint_update = lispoint_update
 		arraobj = append(arraobj, obj)
@@ -98,7 +100,7 @@ func ListpointSave(c *fiber.Ctx) error {
 	// admin, code, name, sData string, idrecord int
 	result, err := models.Save_listpoint(
 		client_admin,
-		client.Lispoint_code, client.Lispoint_name, client.Sdata, client.Lispoint_id)
+		client.Lispoint_code, client.Lispoint_name, client.Sdata, client.Lispoint_id, client.Lispoint_point)
 	if err != nil {
 		c.Status(fiber.StatusBadRequest)
 		return c.JSON(fiber.Map{

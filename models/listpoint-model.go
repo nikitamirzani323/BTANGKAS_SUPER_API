@@ -26,7 +26,7 @@ func Fetch_listpointHome() (helpers.Response, error) {
 	start := time.Now()
 
 	sql_select := `SELECT 
-			idpoin , codepoin, nmpoin,   
+			idpoin , codepoin, nmpoin, poin,   
 			create_listpoint, to_char(COALESCE(createdate_listpoint,now()), 'YYYY-MM-DD HH24:MI:SS'), 
 			update_listpoint, to_char(COALESCE(updatedate_listpoint,now()), 'YYYY-MM-DD HH24:MI:SS') 
 			FROM ` + database_listpoint_local + `  
@@ -36,12 +36,12 @@ func Fetch_listpointHome() (helpers.Response, error) {
 	helpers.ErrorCheck(err)
 	for row.Next() {
 		var (
-			idpoin_db                                                                                  int
+			idpoin_db, poin_db                                                                         int
 			codepoin_db, nmpoin_db                                                                     string
 			create_listpoint_db, createdate_listpoint_db, update_listpoint_db, updatedate_listpoint_db string
 		)
 
-		err = row.Scan(&idpoin_db, &codepoin_db, &nmpoin_db,
+		err = row.Scan(&idpoin_db, &codepoin_db, &nmpoin_db, &poin_db,
 			&create_listpoint_db, &createdate_listpoint_db, &update_listpoint_db, &updatedate_listpoint_db)
 
 		helpers.ErrorCheck(err)
@@ -57,6 +57,7 @@ func Fetch_listpointHome() (helpers.Response, error) {
 		obj.Lispoint_id = idpoin_db
 		obj.Lispoint_code = codepoin_db
 		obj.Lispoint_name = nmpoin_db
+		obj.Lispoint_point = poin_db
 		obj.Lispoint_create = create
 		obj.Lispoint_update = update
 		arraobj = append(arraobj, obj)
@@ -71,7 +72,7 @@ func Fetch_listpointHome() (helpers.Response, error) {
 
 	return res, nil
 }
-func Save_listpoint(admin, code, name, sData string, idrecord int) (helpers.Response, error) {
+func Save_listpoint(admin, code, name, sData string, idrecord, poin int) (helpers.Response, error) {
 	var res helpers.Response
 	msg := "Failed"
 	tglnow, _ := goment.New()
@@ -81,18 +82,18 @@ func Save_listpoint(admin, code, name, sData string, idrecord int) (helpers.Resp
 		sql_insert := `
 			insert into
 			` + database_listpoint_local + ` (
-				idpoin , codepoin, nmpoin,  
+				idpoin , codepoin, nmpoin, poin,  
 				create_listpoint, createdate_listpoint 
 			) values (
-				$1, $2, $3,   
-				$4, $5 
+				$1, $2, $3, $4,   
+				$5, $6 
 			)
 			`
 
 		field_column := database_listpoint_local + tglnow.Format("YYYY")
 		idrecord_counter := Get_counter(field_column)
 		flag_insert, msg_insert := Exec_SQL(sql_insert, database_listpoint_local, "INSERT",
-			tglnow.Format("YY")+strconv.Itoa(idrecord_counter), code, name,
+			tglnow.Format("YY")+strconv.Itoa(idrecord_counter), code, name, poin,
 			admin, tglnow.Format("YYYY-MM-DD HH:mm:ss"))
 
 		if flag_insert {
@@ -104,13 +105,13 @@ func Save_listpoint(admin, code, name, sData string, idrecord int) (helpers.Resp
 		sql_update := `
 				UPDATE 
 				` + database_listpoint_local + `  
-				SET codepoin=$1, nmpoin=$2,  
-				update_listpoint=$3, updatedate_listpoint=$4    
-				WHERE idpoin=$5   
+				SET codepoin=$1, nmpoin=$2, poin=$3,   
+				update_listpoint=$4, updatedate_listpoint=$5     
+				WHERE idpoin=$6    
 			`
 
 		flag_update, msg_update := Exec_SQL(sql_update, database_listpoint_local, "UPDATE",
-			code, name,
+			code, name, poin,
 			admin, tglnow.Format("YYYY-MM-DD HH:mm:ss"), idrecord)
 
 		if flag_update {
