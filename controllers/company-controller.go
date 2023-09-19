@@ -14,6 +14,8 @@ import (
 )
 
 const Fieldcompany_home_redis = "COMPANY_BACKEND"
+const Fieldcompanyadminrule_home_redis = "COMPANYADMINRULE_BACKEND"
+const Fieldcompanyadmin_home_redis = "COMPANYADMIN_BACKEND"
 const Fieldcompany_home_client_redis = "COMPANY_FRONTEND"
 
 func Companyhome(c *fiber.Ctx) error {
@@ -86,6 +88,53 @@ func Companyhome(c *fiber.Ctx) error {
 		})
 	}
 }
+func Companyadminrulehome(c *fiber.Ctx) error {
+	var obj entities.Model_companyadminrule
+	var arraobj []entities.Model_companyadminrule
+	render_page := time.Now()
+	resultredis, flag := helpers.GetRedis(Fieldcompanyadminrule_home_redis)
+	jsonredis := []byte(resultredis)
+	record_RD, _, _, _ := jsonparser.Get(jsonredis, "record")
+	jsonparser.ArrayEach(record_RD, func(value []byte, dataType jsonparser.ValueType, offset int, err error) {
+		companyadminrule_id, _ := jsonparser.GetString(value, "companyadminrule_id")
+		companyadminrule_idcompany, _ := jsonparser.GetString(value, "companyadminrule_idcompany")
+		companyadminrule_nmrule, _ := jsonparser.GetString(value, "companyadminrule_nmrule")
+		companyadminrule_rule, _ := jsonparser.GetString(value, "companyadminrule_rule")
+		companyadminrule_create, _ := jsonparser.GetString(value, "companyadminrule_create")
+		companyadminrule_update, _ := jsonparser.GetString(value, "companyadminrule_update")
+
+		obj.Companyadminrule_id = companyadminrule_id
+		obj.Companyadminrule_idcompany = companyadminrule_idcompany
+		obj.Companyadminrule_nmrule = companyadminrule_nmrule
+		obj.Companyadminrule_rule = companyadminrule_rule
+		obj.Companyadminrule_create = companyadminrule_create
+		obj.Companyadminrule_update = companyadminrule_update
+		arraobj = append(arraobj, obj)
+	})
+
+	if !flag {
+		result, err := models.Fetch_companyadminruleHome()
+		if err != nil {
+			c.Status(fiber.StatusBadRequest)
+			return c.JSON(fiber.Map{
+				"status":  fiber.StatusBadRequest,
+				"message": err.Error(),
+				"record":  nil,
+			})
+		}
+		helpers.SetRedis(Fieldcompanyadminrule_home_redis, result, 60*time.Minute)
+		fmt.Println("COMPANY ADMIN GROUP MYSQL")
+		return c.JSON(result)
+	} else {
+		fmt.Println("COMPANY ADMIN GROUP CACHE")
+		return c.JSON(fiber.Map{
+			"status":  fiber.StatusOK,
+			"message": "Success",
+			"record":  arraobj,
+			"time":    time.Since(render_page).String(),
+		})
+	}
+}
 func CompanySave(c *fiber.Ctx) error {
 	var errors []*helpers.ErrorResponse
 	client := new(entities.Controller_companysave)
@@ -139,8 +188,61 @@ func CompanySave(c *fiber.Ctx) error {
 	_deleteredis_company()
 	return c.JSON(result)
 }
+func CompanyadminruleSave(c *fiber.Ctx) error {
+	var errors []*helpers.ErrorResponse
+	client := new(entities.Controller_companyadminrulesave)
+	validate := validator.New()
+	if err := c.BodyParser(client); err != nil {
+		c.Status(fiber.StatusBadRequest)
+		return c.JSON(fiber.Map{
+			"status":  fiber.StatusBadRequest,
+			"message": err.Error(),
+			"record":  nil,
+		})
+	}
+
+	err := validate.Struct(client)
+	if err != nil {
+		for _, err := range err.(validator.ValidationErrors) {
+			var element helpers.ErrorResponse
+			element.Field = err.StructField()
+			element.Tag = err.Tag()
+			errors = append(errors, &element)
+		}
+		c.Status(fiber.StatusBadRequest)
+		return c.JSON(fiber.Map{
+			"status":  fiber.StatusBadRequest,
+			"message": "validation",
+			"record":  errors,
+		})
+	}
+	user := c.Locals("jwt").(*jwt.Token)
+	claims := user.Claims.(jwt.MapClaims)
+	name := claims["name"].(string)
+	temp_decp := helpers.Decryption(name)
+	client_admin, _ := helpers.Parsing_Decry(temp_decp, "==")
+
+	// admin, idrecord, idcompany, name, rule, sData string
+	result, err := models.Save_companyadminrule(
+		client_admin,
+		client.Companyadminrule_id, client.Companyadminrule_idcompany,
+		client.Companyadminrule_nmrule, client.Companyadminrule_rule, client.Sdata)
+	if err != nil {
+		c.Status(fiber.StatusBadRequest)
+		return c.JSON(fiber.Map{
+			"status":  fiber.StatusBadRequest,
+			"message": err.Error(),
+			"record":  nil,
+		})
+	}
+
+	_deleteredis_company()
+	return c.JSON(result)
+}
 func _deleteredis_company() {
 	val_master := helpers.DeleteRedis(Fieldcompany_home_redis)
 	fmt.Printf("Redis Delete BACKEND COMPANY : %d", val_master)
 
+	val_master_adminrule := helpers.DeleteRedis(Fieldcompanyadminrule_home_redis)
+	fmt.Printf("Redis Delete BACKEND COMPANY ADMIN RULE : %d", val_master_adminrule)
 }

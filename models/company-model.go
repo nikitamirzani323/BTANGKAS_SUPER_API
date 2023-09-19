@@ -3,6 +3,7 @@ package models
 import (
 	"context"
 	"fmt"
+	"strconv"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
@@ -14,6 +15,7 @@ import (
 )
 
 const database_company_local = configs.DB_tbl_mst_company
+const database_companyadminrule_local = configs.DB_tbl_mst_company_adminrule
 
 func Fetch_companyHome() (helpers.Responsecompany, error) {
 	var obj entities.Model_company
@@ -113,6 +115,60 @@ func Fetch_companyHome() (helpers.Responsecompany, error) {
 
 	return res, nil
 }
+func Fetch_companyadminruleHome() (helpers.Response, error) {
+	var obj entities.Model_companyadminrule
+	var arraobj []entities.Model_companyadminrule
+	var res helpers.Response
+	msg := "Data Not Found"
+	con := db.CreateCon()
+	ctx := context.Background()
+	start := time.Now()
+
+	sql_select := `SELECT 
+			companyrule_adminrule, idcompany, companyrule_name, companyrule_rule, 
+			create_companyrule, to_char(COALESCE(createdate_companyrule,now()), 'YYYY-MM-DD HH24:MI:SS'), 
+			update_companyrule, to_char(COALESCE(updatedate_companyrule,now()), 'YYYY-MM-DD HH24:MI:SS') 
+			FROM ` + database_companyadminrule_local + `  
+			ORDER BY createdate_companyrule DESC   `
+
+	row, err := con.QueryContext(ctx, sql_select)
+	helpers.ErrorCheck(err)
+	for row.Next() {
+		var (
+			companyrule_adminrule_db, idcompany_db, companyrule_name_db, companyrule_rule_db                   string
+			create_companyrule_db, createdate_companyrule_db, update_companyrule_db, updatedate_companyrule_db string
+		)
+
+		err = row.Scan(&companyrule_adminrule_db, &idcompany_db, &companyrule_name_db, &companyrule_rule_db,
+			&create_companyrule_db, &createdate_companyrule_db, &update_companyrule_db, &updatedate_companyrule_db)
+
+		helpers.ErrorCheck(err)
+		create := ""
+		update := ""
+		if create_companyrule_db != "" {
+			create = create_companyrule_db + ", " + createdate_companyrule_db
+		}
+		if update_companyrule_db != "" {
+			update = update_companyrule_db + ", " + updatedate_companyrule_db
+		}
+		obj.Companyadminrule_id = companyrule_adminrule_db
+		obj.Companyadminrule_idcompany = idcompany_db
+		obj.Companyadminrule_nmrule = companyrule_name_db
+		obj.Companyadminrule_rule = companyrule_rule_db
+		obj.Companyadminrule_create = create
+		obj.Companyadminrule_update = update
+		arraobj = append(arraobj, obj)
+		msg = "Success"
+	}
+	defer row.Close()
+
+	res.Status = fiber.StatusOK
+	res.Message = msg
+	res.Record = arraobj
+	res.Time = time.Since(start).String()
+
+	return res, nil
+}
 func Save_company(admin, idrecord, idcurr, nmcompany, nmowner, phoneowner, emailowner, url, status, sData string) (helpers.Response, error) {
 	var res helpers.Response
 	msg := "Failed"
@@ -189,6 +245,60 @@ func Save_company(admin, idrecord, idcurr, nmcompany, nmowner, phoneowner, email
 			}
 		}
 
+	}
+
+	res.Status = fiber.StatusOK
+	res.Message = msg
+	res.Record = nil
+	res.Time = time.Since(render_page).String()
+
+	return res, nil
+}
+func Save_companyadminrule(admin, idrecord, idcompany, name, rule, sData string) (helpers.Response, error) {
+	var res helpers.Response
+	msg := "Failed"
+	tglnow, _ := goment.New()
+	render_page := time.Now()
+
+	if sData == "New" {
+		sql_insert := `
+			insert into
+			` + database_companyadminrule_local + ` (
+				companyrule_adminrule , idcompany, companyrule_name, companyrule_rule,   
+				create_companyrule, createdate_companyrule 
+			) values (
+				$1, $2, $3, $4,    
+				$5, $6   
+			)
+		`
+		field_column := database_companyadminrule_local + tglnow.Format("YYYY")
+		idrecord_counter := Get_counter(field_column)
+		flag_insert, msg_insert := Exec_SQL(sql_insert, database_companyadminrule_local, "INSERT",
+			tglnow.Format("YY")+strconv.Itoa(idrecord_counter), idcompany, name, rule,
+			admin, tglnow.Format("YYYY-MM-DD HH:mm:ss"))
+
+		if flag_insert {
+			msg = "Succes"
+		} else {
+			fmt.Println(msg_insert)
+		}
+	} else {
+		sql_update := `
+				UPDATE 
+				` + database_companyadminrule_local + `  
+				SET companyrule_name=$1, companyrule_rule=$2   
+				WHERE idcompany=$3 AND companyrule_adminrule=$4 
+			`
+
+		flag_update, msg_update := Exec_SQL(sql_update, database_company_local, "UPDATE",
+			name, rule,
+			admin, tglnow.Format("YYYY-MM-DD HH:mm:ss"), idrecord)
+
+		if flag_update {
+			msg = "Succes"
+		} else {
+			fmt.Println(msg_update)
+		}
 	}
 
 	res.Status = fiber.StatusOK
