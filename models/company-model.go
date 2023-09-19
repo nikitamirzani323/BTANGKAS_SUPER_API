@@ -313,13 +313,14 @@ func Save_companyadminrule(admin, idrecord, idcompany, name, rule, sData string)
 		sql_update := `
 				UPDATE 
 				` + database_companyadminrule_local + `  
-				SET companyrule_name=$1, companyrule_rule=$2   
-				WHERE idcompany=$3 AND companyrule_adminrule=$4 
+				SET companyrule_name=$1, companyrule_rule=$2, 
+				update_companyrule=$3, updatedate_companyrule=$4 
+				WHERE idcompany=$5 AND companyrule_adminrule=$6  
 			`
 
 		flag_update, msg_update := Exec_SQL(sql_update, database_company_local, "UPDATE",
 			name, rule,
-			admin, tglnow.Format("YYYY-MM-DD HH:mm:ss"), idrecord)
+			admin, tglnow.Format("YYYY-MM-DD HH:mm:ss"), idcompany, idrecord)
 
 		if flag_update {
 			msg = "Succes"
