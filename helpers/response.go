@@ -14,12 +14,11 @@ type Responsepaging struct {
 	Totalrecord int         `json:"totalrecord"`
 	Time        string      `json:"time"`
 }
-type Responsemaster struct {
+type Responsecompany struct {
 	Status   int         `json:"status"`
 	Message  string      `json:"message"`
 	Record   interface{} `json:"record"`
 	Listcurr interface{} `json:"listcurr"`
-	Listbank interface{} `json:"listbank"`
 	Time     string      `json:"time"`
 }
 type Responseprovider struct {

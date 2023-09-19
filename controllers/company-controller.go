@@ -19,13 +19,15 @@ const Fieldcompany_home_client_redis = "COMPANY_FRONTEND"
 func Companyhome(c *fiber.Ctx) error {
 	var obj entities.Model_company
 	var arraobj []entities.Model_company
+	var objcurr entities.Model_currshare
+	var arraobjcurr []entities.Model_currshare
 	render_page := time.Now()
 	resultredis, flag := helpers.GetRedis(Fieldcompany_home_redis)
 	jsonredis := []byte(resultredis)
 	record_RD, _, _, _ := jsonparser.Get(jsonredis, "record")
+	listcurr_RD, _, _, _ := jsonparser.Get(jsonredis, "listcurr")
 	jsonparser.ArrayEach(record_RD, func(value []byte, dataType jsonparser.ValueType, offset int, err error) {
 		company_id, _ := jsonparser.GetString(value, "company_id")
-		company_code, _ := jsonparser.GetString(value, "company_code")
 		company_startjoin, _ := jsonparser.GetString(value, "company_startjoin")
 		company_endjoin, _ := jsonparser.GetString(value, "company_endjoin")
 		company_name, _ := jsonparser.GetString(value, "company_name")
@@ -35,11 +37,11 @@ func Companyhome(c *fiber.Ctx) error {
 		company_emailowner, _ := jsonparser.GetString(value, "company_emailowner")
 		company_url, _ := jsonparser.GetString(value, "company_url")
 		company_status, _ := jsonparser.GetString(value, "company_status")
+		company_status_css, _ := jsonparser.GetString(value, "company_status_css")
 		company_create, _ := jsonparser.GetString(value, "company_create")
 		company_update, _ := jsonparser.GetString(value, "company_update")
 
 		obj.Company_id = company_id
-		obj.Company_code = company_code
 		obj.Company_startjoin = company_startjoin
 		obj.Company_endjoin = company_endjoin
 		obj.Company_name = company_name
@@ -49,11 +51,17 @@ func Companyhome(c *fiber.Ctx) error {
 		obj.Company_emailowner = company_emailowner
 		obj.Company_url = company_url
 		obj.Company_status = company_status
+		obj.Company_status_css = company_status_css
 		obj.Company_create = company_create
 		obj.Company_update = company_update
 		arraobj = append(arraobj, obj)
 	})
+	jsonparser.ArrayEach(listcurr_RD, func(value []byte, dataType jsonparser.ValueType, offset int, err error) {
+		curr_id, _ := jsonparser.GetString(value, "curr_id")
 
+		objcurr.Curr_id = curr_id
+		arraobjcurr = append(arraobjcurr, objcurr)
+	})
 	if !flag {
 		result, err := models.Fetch_companyHome()
 		if err != nil {
@@ -70,10 +78,11 @@ func Companyhome(c *fiber.Ctx) error {
 	} else {
 		fmt.Println("COMPANY CACHE")
 		return c.JSON(fiber.Map{
-			"status":  fiber.StatusOK,
-			"message": "Success",
-			"record":  arraobj,
-			"time":    time.Since(render_page).String(),
+			"status":   fiber.StatusOK,
+			"message":  "Success",
+			"record":   arraobj,
+			"listcurr": arraobjcurr,
+			"time":     time.Since(render_page).String(),
 		})
 	}
 }
@@ -114,7 +123,7 @@ func CompanySave(c *fiber.Ctx) error {
 	// aadmin, idrecord, code, idcurr, nmcompany, nmowner, phoneowner, emailowner, url, status, sData string
 	result, err := models.Save_company(
 		client_admin,
-		client.Company_id, client.Company_code, client.Company_idcurr,
+		client.Company_id, client.Company_idcurr,
 		client.Company_name, client.Company_nmowner, client.Company_phoneowner, client.Company_emailowner,
 		client.Company_url, client.Company_status,
 		client.Sdata)
