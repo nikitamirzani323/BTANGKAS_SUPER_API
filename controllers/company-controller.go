@@ -91,10 +91,13 @@ func Companyhome(c *fiber.Ctx) error {
 func Companyadminrulehome(c *fiber.Ctx) error {
 	var obj entities.Model_companyadminrule
 	var arraobj []entities.Model_companyadminrule
+	var objcompany entities.Model_companyshare
+	var arraobjcompany []entities.Model_companyshare
 	render_page := time.Now()
 	resultredis, flag := helpers.GetRedis(Fieldcompanyadminrule_home_redis)
 	jsonredis := []byte(resultredis)
 	record_RD, _, _, _ := jsonparser.Get(jsonredis, "record")
+	listcompany_RD, _, _, _ := jsonparser.Get(jsonredis, "listcompany")
 	jsonparser.ArrayEach(record_RD, func(value []byte, dataType jsonparser.ValueType, offset int, err error) {
 		companyadminrule_id, _ := jsonparser.GetString(value, "companyadminrule_id")
 		companyadminrule_idcompany, _ := jsonparser.GetString(value, "companyadminrule_idcompany")
@@ -111,7 +114,14 @@ func Companyadminrulehome(c *fiber.Ctx) error {
 		obj.Companyadminrule_update = companyadminrule_update
 		arraobj = append(arraobj, obj)
 	})
+	jsonparser.ArrayEach(listcompany_RD, func(value []byte, dataType jsonparser.ValueType, offset int, err error) {
+		company_id, _ := jsonparser.GetString(value, "company_id")
+		company_name, _ := jsonparser.GetString(value, "company_name")
 
+		objcompany.Company_id = company_id
+		objcompany.Company_name = company_name
+		arraobjcompany = append(arraobjcompany, objcompany)
+	})
 	if !flag {
 		result, err := models.Fetch_companyadminruleHome()
 		if err != nil {
@@ -128,10 +138,11 @@ func Companyadminrulehome(c *fiber.Ctx) error {
 	} else {
 		fmt.Println("COMPANY ADMIN GROUP CACHE")
 		return c.JSON(fiber.Map{
-			"status":  fiber.StatusOK,
-			"message": "Success",
-			"record":  arraobj,
-			"time":    time.Since(render_page).String(),
+			"status":      fiber.StatusOK,
+			"message":     "Success",
+			"record":      arraobj,
+			"listcompany": arraobjcompany,
+			"time":        time.Since(render_page).String(),
 		})
 	}
 }

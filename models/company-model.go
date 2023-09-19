@@ -115,10 +115,12 @@ func Fetch_companyHome() (helpers.Responsecompany, error) {
 
 	return res, nil
 }
-func Fetch_companyadminruleHome() (helpers.Response, error) {
+func Fetch_companyadminruleHome() (helpers.Responsecompanyadminrule, error) {
 	var obj entities.Model_companyadminrule
 	var arraobj []entities.Model_companyadminrule
-	var res helpers.Response
+	var objcompany entities.Model_companyshare
+	var arraobjcompany []entities.Model_companyshare
+	var res helpers.Responsecompanyadminrule
 	msg := "Data Not Found"
 	con := db.CreateCon()
 	ctx := context.Background()
@@ -162,9 +164,34 @@ func Fetch_companyadminruleHome() (helpers.Response, error) {
 	}
 	defer row.Close()
 
+	sql_selectcompany := `SELECT 
+			idcompany, nmcompany  
+			FROM ` + database_company_local + ` 
+			WHERE statuscompany = 'Y' 
+			ORDER BY idcompany ASC    
+	`
+	rowcompany, errcompany := con.QueryContext(ctx, sql_selectcompany)
+	helpers.ErrorCheck(errcompany)
+	for rowcompany.Next() {
+		var (
+			idcompany_db, nmcompany_db string
+		)
+
+		errcompany = rowcompany.Scan(&idcompany_db, &nmcompany_db)
+
+		helpers.ErrorCheck(errcompany)
+
+		objcompany.Company_id = idcompany_db
+		objcompany.Company_name = nmcompany_db
+		arraobjcompany = append(arraobjcompany, objcompany)
+		msg = "Success"
+	}
+	defer rowcompany.Close()
+
 	res.Status = fiber.StatusOK
 	res.Message = msg
 	res.Record = arraobj
+	res.Listcompany = arraobjcompany
 	res.Time = time.Since(start).String()
 
 	return res, nil

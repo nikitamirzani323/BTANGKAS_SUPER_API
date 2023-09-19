@@ -15,6 +15,10 @@ type Model_company struct {
 	Company_create     string `json:"company_create"`
 	Company_update     string `json:"company_update"`
 }
+type Model_companyshare struct {
+	Company_id   string `json:"company_id"`
+	Company_name string `json:"company_name"`
+}
 
 type Controller_companysave struct {
 	Page               string `json:"page" validate:"required"`
