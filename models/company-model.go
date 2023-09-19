@@ -121,7 +121,7 @@ func Save_company(admin, idrecord, idcurr, nmcompany, nmowner, phoneowner, email
 	flag := false
 
 	if sData == "New" {
-		flag = CheckDB(database_company_local, "idcompany0", idrecord)
+		flag = CheckDB(database_company_local, "idcompany", idrecord)
 		if !flag {
 			sql_insert := `
 				insert into
@@ -130,9 +130,9 @@ func Save_company(admin, idrecord, idcurr, nmcompany, nmowner, phoneowner, email
 					idcurr , nmcompany, nmowner, phoneowner, emailowner, companyurl, statuscompany,  
 					createcompany, createdatecompany 
 				) values (
-					$1, $2, $3, $4,   
-					$5, $6, $7, $8, $9, $10, $11, 
-					$12, $13  
+					$1, $2, $3,    
+					$4, $5, $6, $7, $8, $9, $10, 
+					$11, $12   
 				)
 			`
 			startjoin := tglnow.Format("YYYY-MM-DD HH:mm:ss")
