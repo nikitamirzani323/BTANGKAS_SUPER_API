@@ -16,6 +16,7 @@ import (
 
 const database_company_local = configs.DB_tbl_mst_company
 const database_companyadminrule_local = configs.DB_tbl_mst_company_adminrule
+const database_companyadmin_local = configs.DB_tbl_mst_company_admin
 
 func Fetch_companyHome() (helpers.Responsecompany, error) {
 	var obj entities.Model_company
@@ -196,6 +197,101 @@ func Fetch_companyadminruleHome() (helpers.Responsecompanyadminrule, error) {
 
 	return res, nil
 }
+func Fetch_companyadminHome() (helpers.Responsecompanyadminrule, error) {
+	var obj entities.Model_companyadmin
+	var arraobj []entities.Model_companyadmin
+	var objcompany entities.Model_companyshare
+	var arraobjcompany []entities.Model_companyshare
+	var res helpers.Responsecompanyadminrule
+	msg := "Data Not Found"
+	con := db.CreateCon()
+	ctx := context.Background()
+	start := time.Now()
+
+	sql_select := `SELECT 
+			company_idadmin, companyrule_adminrule, idcompany, tipeadmincompany, 
+			company_username, company_ipaddress, 
+			to_char(COALESCE(company_lastloginadmin,now()), 'YYYY-MM-DD HH24:MI:SS'),
+			company_name, company_phone1, company_phone2, company_status,
+			createadmin_company, to_char(COALESCE(createadmindate_company,now()), 'YYYY-MM-DD HH24:MI:SS'), 
+			updateadmin_company, to_char(COALESCE(updateadmindate_company,now()), 'YYYY-MM-DD HH24:MI:SS') 
+			FROM ` + database_companyadmin_local + `  
+			ORDER BY createadmindate_company DESC   `
+
+	row, err := con.QueryContext(ctx, sql_select)
+	helpers.ErrorCheck(err)
+	for row.Next() {
+		var (
+			companyrule_adminrule_db                                                                                                                       int
+			company_idadmin_db, idcompany_db, tipeadmincompany_db                                                                                          string
+			company_username_db, company_ipaddress_db, company_lastloginadmin_db, company_name_db, company_phone1_db, company_phone2_db, company_status_db string
+			createadmin_company_db, createadmindate_company_db, updateadmin_company_db, updateadmindate_company_db                                         string
+		)
+
+		err = row.Scan(&company_idadmin_db, &companyrule_adminrule_db, &idcompany_db, &tipeadmincompany_db,
+			&company_username_db, &company_ipaddress_db, &company_lastloginadmin_db, &company_name_db,
+			&company_phone1_db, &company_phone2_db, &company_status_db,
+			&createadmin_company_db, &createadmindate_company_db, &updateadmin_company_db, &updateadmindate_company_db)
+
+		helpers.ErrorCheck(err)
+		create := ""
+		update := ""
+		if createadmin_company_db != "" {
+			create = createadmin_company_db + ", " + createadmindate_company_db
+		}
+		if updateadmin_company_db != "" {
+			update = updateadmin_company_db + ", " + updateadmindate_company_db
+		}
+		obj.Companyadmin_id = company_idadmin_db
+		obj.Companyadmin_idrule = companyrule_adminrule_db
+		obj.Companyadmin_idcompany = idcompany_db
+		obj.Companyadmin_tipe = tipeadmincompany_db
+		obj.Companyadmin_username = company_username_db
+		obj.Companyadmin_ipaddress = company_ipaddress_db
+		obj.Companyadmin_lastlogin = company_lastloginadmin_db
+		obj.Companyadmin_name = company_name_db
+		obj.Companyadmin_phone1 = company_phone1_db
+		obj.Companyadmin_phone2 = company_phone2_db
+		obj.Companyadmin_status = company_status_db
+		obj.Companyadmin_create = create
+		obj.Companyadmin_update = update
+		arraobj = append(arraobj, obj)
+		msg = "Success"
+	}
+	defer row.Close()
+
+	sql_selectcompany := `SELECT 
+			idcompany, nmcompany  
+			FROM ` + database_company_local + ` 
+			WHERE statuscompany = 'Y' 
+			ORDER BY idcompany ASC    
+	`
+	rowcompany, errcompany := con.QueryContext(ctx, sql_selectcompany)
+	helpers.ErrorCheck(errcompany)
+	for rowcompany.Next() {
+		var (
+			idcompany_db, nmcompany_db string
+		)
+
+		errcompany = rowcompany.Scan(&idcompany_db, &nmcompany_db)
+
+		helpers.ErrorCheck(errcompany)
+
+		objcompany.Company_id = idcompany_db
+		objcompany.Company_name = nmcompany_db
+		arraobjcompany = append(arraobjcompany, objcompany)
+		msg = "Success"
+	}
+	defer rowcompany.Close()
+
+	res.Status = fiber.StatusOK
+	res.Message = msg
+	res.Record = arraobj
+	res.Listcompany = arraobjcompany
+	res.Time = time.Since(start).String()
+
+	return res, nil
+}
 func Save_company(admin, idrecord, idcurr, nmcompany, nmowner, phoneowner, emailowner, url, status, sData string) (helpers.Response, error) {
 	var res helpers.Response
 	msg := "Failed"
@@ -327,6 +423,97 @@ func Save_companyadminrule(admin, idrecord, idcompany, name, rule, sData string)
 		} else {
 			fmt.Println(msg_update)
 		}
+	}
+
+	res.Status = fiber.StatusOK
+	res.Message = msg
+	res.Record = nil
+	res.Time = time.Since(render_page).String()
+
+	return res, nil
+}
+func Save_companyadmin(admin, idrecord, idcompany, username, password, name, phone1, phone2, status, sData string, idrule int) (helpers.Response, error) {
+	var res helpers.Response
+	msg := "Failed"
+	tglnow, _ := goment.New()
+	render_page := time.Now()
+	flag := false
+
+	if sData == "New" {
+		flag = CheckDBTwoField(database_companyadmin_local, "company_idadmin", idrecord, "idcompany", idcompany)
+		if !flag {
+			sql_insert := `
+				insert into
+				` + database_companyadmin_local + ` (
+					company_idadmin , companyrule_adminrule, idcompany, tipeadmincompany,  
+					company_username , company_password, company_lastloginadmin,  
+					company_name , company_phone1, company_phone2,  company_status,
+					createadmin_company, createadmindate_company 
+				) values (
+					$1, $2, $3, $4,    
+					$5, $6, $7,     
+					$8, $9, $10, $11,    
+					$12, $13   
+				)
+			`
+			startjoin := tglnow.Format("YYYY-MM-DD HH:mm:ss")
+			hashpass := helpers.HashPasswordMD5(password)
+			flag_insert, msg_insert := Exec_SQL(sql_insert, database_companyadmin_local, "INSERT",
+				idrecord, idrule, idcompany, "MASTER",
+				username, hashpass, startjoin,
+				name, phone1, phone2, status,
+				admin, tglnow.Format("YYYY-MM-DD HH:mm:ss"))
+
+			if flag_insert {
+				msg = "Succes"
+			} else {
+				fmt.Println(msg_insert)
+			}
+		} else {
+			msg = "Duplicate Entry"
+		}
+	} else {
+		if password != "" {
+			hashpass := helpers.HashPasswordMD5(password)
+			sql_update := `
+				UPDATE 
+				` + database_companyadmin_local + `  
+				SET company_password=$1, companyrule_adminrule=$2, company_name=$3, 
+				company_phone1=$4, company_phone2=$5, company_status=$6, 
+				updateadmin_company=$7, updateadmindate_company=$8  
+				WHERE idcompany=$9 AND company_idadmin=$10   
+			`
+
+			flag_update, msg_update := Exec_SQL(sql_update, database_companyadmin_local, "UPDATE",
+				hashpass, idrule, name, phone1, phone2, status,
+				admin, tglnow.Format("YYYY-MM-DD HH:mm:ss"), idcompany, idrecord)
+
+			if flag_update {
+				msg = "Succes"
+			} else {
+				fmt.Println(msg_update)
+			}
+		} else {
+			sql_update := `
+				UPDATE 
+				` + database_companyadmin_local + `  
+				SET companyrule_adminrule=$1, company_name=$2, 
+				company_phone1=$3, company_phone2=$4, company_status=$5, 
+				updateadmin_company=$6, updateadmindate_company=$7  
+				WHERE idcompany=$8 AND company_idadmin=$9  
+			`
+
+			flag_update, msg_update := Exec_SQL(sql_update, database_companyadmin_local, "UPDATE",
+				idrule, name, phone1, phone2, status,
+				admin, tglnow.Format("YYYY-MM-DD HH:mm:ss"), idcompany, idrecord)
+
+			if flag_update {
+				msg = "Succes"
+			} else {
+				fmt.Println(msg_update)
+			}
+		}
+
 	}
 
 	res.Status = fiber.StatusOK
