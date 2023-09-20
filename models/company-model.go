@@ -239,11 +239,18 @@ func Fetch_companyadminHome() (helpers.Responsecompanyadmin, error) {
 		helpers.ErrorCheck(err)
 		create := ""
 		update := ""
+		status_css := configs.STATUS_CANCEL
 		if createadmin_company_db != "" {
 			create = createadmin_company_db + ", " + createadmindate_company_db
 		}
 		if updateadmin_company_db != "" {
 			update = updateadmin_company_db + ", " + updateadmindate_company_db
+		}
+		if company_status_db == "Y" {
+			status_css = configs.STATUS_COMPLETE
+		}
+		if company_lastloginadmin_db == createadmindate_company_db {
+			company_lastloginadmin_db = ""
 		}
 		obj.Companyadmin_id = company_idadmin_db
 		obj.Companyadmin_idrule = companyrule_adminrule_db
@@ -256,12 +263,12 @@ func Fetch_companyadminHome() (helpers.Responsecompanyadmin, error) {
 		obj.Companyadmin_phone1 = company_phone1_db
 		obj.Companyadmin_phone2 = company_phone2_db
 		obj.Companyadmin_status = company_status_db
+		obj.Companyadmin_status_css = status_css
 		obj.Companyadmin_create = create
 		obj.Companyadmin_update = update
 		arraobj = append(arraobj, obj)
 		msg = "Success"
 	}
-	defer row.Close()
 
 	sql_selectcompany := `SELECT 
 			idcompany, nmcompany  
@@ -285,12 +292,11 @@ func Fetch_companyadminHome() (helpers.Responsecompanyadmin, error) {
 		arraobjcompany = append(arraobjcompany, objcompany)
 		msg = "Success"
 	}
-	defer rowcompany.Close()
 
 	sql_selectcompanyadminrule := `SELECT 
 			A.companyrule_adminrule, A.idcompany, A.companyrule_name  
 			FROM ` + database_companyadminrule_local + ` as A 
-			JOIN ` + database_company_local + ` as B ON B.idcompany as A.idcompany  
+			JOIN ` + database_company_local + ` as B ON B.idcompany = A.idcompany  
 			WHERE B.statuscompany = 'Y' 
 			ORDER BY A.companyrule_adminrule ASC    
 	`
@@ -302,15 +308,18 @@ func Fetch_companyadminHome() (helpers.Responsecompanyadmin, error) {
 			idcompany_db, companyrule_name_db string
 		)
 
-		errcompanyadminrule = rowcompany.Scan(&companyrule_adminrule_db, &idcompany_db, &companyrule_name_db)
+		errcompanyadminrule = rowcompanyadminrule.Scan(&companyrule_adminrule_db, &idcompany_db, &companyrule_name_db)
 
 		helpers.ErrorCheck(errcompanyadminrule)
 
 		objrule.Companyadminrule_id = companyrule_adminrule_db
-		objrule.Companyadminrule_nmrule = idcompany_db + " - " + companyrule_name_db
+		objrule.Companyadminrule_idcompany = idcompany_db
+		objrule.Companyadminrule_nmrule = companyrule_name_db
 		arraobjrule = append(arraobjrule, objrule)
 		msg = "Success"
 	}
+	defer row.Close()
+	defer rowcompany.Close()
 	defer rowcompanyadminrule.Close()
 
 	res.Status = fiber.StatusOK
@@ -492,7 +501,7 @@ func Save_companyadmin(admin, idrecord, idcompany, username, password, name, pho
 				idrecord, idrule, idcompany, "MASTER",
 				username, hashpass, startjoin,
 				name, phone1, phone2, status,
-				admin, tglnow.Format("YYYY-MM-DD HH:mm:ss"))
+				admin, startjoin)
 
 			if flag_insert {
 				msg = "Succes"

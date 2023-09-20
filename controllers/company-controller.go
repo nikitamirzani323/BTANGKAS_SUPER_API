@@ -171,6 +171,7 @@ func Companyadminhome(c *fiber.Ctx) error {
 		companyadmin_phone1, _ := jsonparser.GetString(value, "companyadmin_phone1")
 		companyadmin_phone2, _ := jsonparser.GetString(value, "companyadmin_phone2")
 		companyadmin_status, _ := jsonparser.GetString(value, "companyadmin_status")
+		companyadmin_status_css, _ := jsonparser.GetString(value, "companyadmin_status_css")
 		companyadmin_create, _ := jsonparser.GetString(value, "companyadmin_create")
 		companyadmin_update, _ := jsonparser.GetString(value, "companyadmin_update")
 
@@ -185,6 +186,7 @@ func Companyadminhome(c *fiber.Ctx) error {
 		obj.Companyadmin_phone1 = companyadmin_phone1
 		obj.Companyadmin_phone2 = companyadmin_phone2
 		obj.Companyadmin_status = companyadmin_status
+		obj.Companyadmin_status_css = companyadmin_status_css
 		obj.Companyadmin_create = companyadmin_create
 		obj.Companyadmin_update = companyadmin_update
 		arraobj = append(arraobj, obj)
@@ -199,9 +201,11 @@ func Companyadminhome(c *fiber.Ctx) error {
 	})
 	jsonparser.ArrayEach(listrule_RD, func(value []byte, dataType jsonparser.ValueType, offset int, err error) {
 		companyadminrule_id, _ := jsonparser.GetInt(value, "companyadminrule_id")
+		companyadminrule_idcompany, _ := jsonparser.GetString(value, "companyadminrule_idcompany")
 		companyadminrule_nmrule, _ := jsonparser.GetString(value, "companyadminrule_nmrule")
 
 		objrule.Companyadminrule_id = int(companyadminrule_id)
+		objrule.Companyadminrule_idcompany = companyadminrule_idcompany
 		objrule.Companyadminrule_nmrule = companyadminrule_nmrule
 		arraobjrule = append(arraobjrule, objrule)
 	})

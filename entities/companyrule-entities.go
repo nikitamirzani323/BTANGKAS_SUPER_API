@@ -9,8 +9,9 @@ type Model_companyadminrule struct {
 	Companyadminrule_update    string `json:"companyadminrule_update"`
 }
 type Model_companyadminrule_share struct {
-	Companyadminrule_id     int    `json:"companyadminrule_id"`
-	Companyadminrule_nmrule string `json:"companyadminrule_nmrule"`
+	Companyadminrule_id        int    `json:"companyadminrule_id"`
+	Companyadminrule_idcompany string `json:"companyadminrule_idcompany"`
+	Companyadminrule_nmrule    string `json:"companyadminrule_nmrule"`
 }
 
 type Controller_companyadminrulesave struct {
