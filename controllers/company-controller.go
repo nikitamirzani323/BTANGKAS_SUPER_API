@@ -99,14 +99,14 @@ func Companyadminrulehome(c *fiber.Ctx) error {
 	record_RD, _, _, _ := jsonparser.Get(jsonredis, "record")
 	listcompany_RD, _, _, _ := jsonparser.Get(jsonredis, "listcompany")
 	jsonparser.ArrayEach(record_RD, func(value []byte, dataType jsonparser.ValueType, offset int, err error) {
-		companyadminrule_id, _ := jsonparser.GetString(value, "companyadminrule_id")
+		companyadminrule_id, _ := jsonparser.GetInt(value, "companyadminrule_id")
 		companyadminrule_idcompany, _ := jsonparser.GetString(value, "companyadminrule_idcompany")
 		companyadminrule_nmrule, _ := jsonparser.GetString(value, "companyadminrule_nmrule")
 		companyadminrule_rule, _ := jsonparser.GetString(value, "companyadminrule_rule")
 		companyadminrule_create, _ := jsonparser.GetString(value, "companyadminrule_create")
 		companyadminrule_update, _ := jsonparser.GetString(value, "companyadminrule_update")
 
-		obj.Companyadminrule_id = companyadminrule_id
+		obj.Companyadminrule_id = int(companyadminrule_id)
 		obj.Companyadminrule_idcompany = companyadminrule_idcompany
 		obj.Companyadminrule_nmrule = companyadminrule_nmrule
 		obj.Companyadminrule_rule = companyadminrule_rule
@@ -308,8 +308,8 @@ func CompanyadminruleSave(c *fiber.Ctx) error {
 	// admin, idrecord, idcompany, name, rule, sData string
 	result, err := models.Save_companyadminrule(
 		client_admin,
-		client.Companyadminrule_id, client.Companyadminrule_idcompany,
-		client.Companyadminrule_nmrule, client.Companyadminrule_rule, client.Sdata)
+		client.Companyadminrule_idcompany,
+		client.Companyadminrule_nmrule, client.Companyadminrule_rule, client.Sdata, client.Companyadminrule_id)
 	if err != nil {
 		c.Status(fiber.StatusBadRequest)
 		return c.JSON(fiber.Map{

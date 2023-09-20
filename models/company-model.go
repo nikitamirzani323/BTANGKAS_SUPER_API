@@ -138,7 +138,8 @@ func Fetch_companyadminruleHome() (helpers.Responsecompanyadminrule, error) {
 	helpers.ErrorCheck(err)
 	for row.Next() {
 		var (
-			companyrule_adminrule_db, idcompany_db, companyrule_name_db, companyrule_rule_db                   string
+			companyrule_adminrule_db                                                                           int
+			idcompany_db, companyrule_name_db, companyrule_rule_db                                             string
 			create_companyrule_db, createdate_companyrule_db, update_companyrule_db, updatedate_companyrule_db string
 		)
 
@@ -197,12 +198,14 @@ func Fetch_companyadminruleHome() (helpers.Responsecompanyadminrule, error) {
 
 	return res, nil
 }
-func Fetch_companyadminHome() (helpers.Responsecompanyadminrule, error) {
+func Fetch_companyadminHome() (helpers.Responsecompanyadmin, error) {
 	var obj entities.Model_companyadmin
 	var arraobj []entities.Model_companyadmin
+	var objrule entities.Model_companyadminrule_share
+	var arraobjrule []entities.Model_companyadminrule_share
 	var objcompany entities.Model_companyshare
 	var arraobjcompany []entities.Model_companyshare
-	var res helpers.Responsecompanyadminrule
+	var res helpers.Responsecompanyadmin
 	msg := "Data Not Found"
 	con := db.CreateCon()
 	ctx := context.Background()
@@ -284,10 +287,37 @@ func Fetch_companyadminHome() (helpers.Responsecompanyadminrule, error) {
 	}
 	defer rowcompany.Close()
 
+	sql_selectcompanyadminrule := `SELECT 
+			A.companyrule_adminrule, A.idcompany, A.companyrule_name  
+			FROM ` + database_companyadminrule_local + ` as A 
+			JOIN ` + database_company_local + ` as B ON B.idcompany as A.idcompany  
+			WHERE B.statuscompany = 'Y' 
+			ORDER BY A.companyrule_adminrule ASC    
+	`
+	rowcompanyadminrule, errcompanyadminrule := con.QueryContext(ctx, sql_selectcompanyadminrule)
+	helpers.ErrorCheck(errcompanyadminrule)
+	for rowcompanyadminrule.Next() {
+		var (
+			companyrule_adminrule_db          int
+			idcompany_db, companyrule_name_db string
+		)
+
+		errcompanyadminrule = rowcompany.Scan(&companyrule_adminrule_db, &idcompany_db, &companyrule_name_db)
+
+		helpers.ErrorCheck(errcompanyadminrule)
+
+		objrule.Companyadminrule_id = companyrule_adminrule_db
+		objrule.Companyadminrule_nmrule = idcompany_db + " - " + companyrule_name_db
+		arraobjrule = append(arraobjrule, objrule)
+		msg = "Success"
+	}
+	defer rowcompanyadminrule.Close()
+
 	res.Status = fiber.StatusOK
 	res.Message = msg
 	res.Record = arraobj
 	res.Listcompany = arraobjcompany
+	res.Listrule = arraobjrule
 	res.Time = time.Since(start).String()
 
 	return res, nil
@@ -377,7 +407,7 @@ func Save_company(admin, idrecord, idcurr, nmcompany, nmowner, phoneowner, email
 
 	return res, nil
 }
-func Save_companyadminrule(admin, idrecord, idcompany, name, rule, sData string) (helpers.Response, error) {
+func Save_companyadminrule(admin, idcompany, name, rule, sData string, idrecord int) (helpers.Response, error) {
 	var res helpers.Response
 	msg := "Failed"
 	tglnow, _ := goment.New()

@@ -21,6 +21,14 @@ type Responsecompany struct {
 	Listcurr interface{} `json:"listcurr"`
 	Time     string      `json:"time"`
 }
+type Responsecompanyadmin struct {
+	Status      int         `json:"status"`
+	Message     string      `json:"message"`
+	Record      interface{} `json:"record"`
+	Listcompany interface{} `json:"listcompany"`
+	Listrule    interface{} `json:"listrule"`
+	Time        string      `json:"time"`
+}
 type Responsecompanyadminrule struct {
 	Status      int         `json:"status"`
 	Message     string      `json:"message"`
