@@ -5,6 +5,7 @@ type Model_companyadmin struct {
 	Companyadmin_idrule     int    `json:"companyadmin_idrule"`
 	Companyadmin_idcompany  string `json:"companyadmin_idcompany"`
 	Companyadmin_tipe       string `json:"companyadmin_tipe"`
+	Companyadmin_nmrule     string `json:"companyadmin_nmrule"`
 	Companyadmin_username   string `json:"companyadmin_username"`
 	Companyadmin_ipaddress  string `json:"companyadmin_ipaddress"`
 	Companyadmin_lastlogin  string `json:"companyadmin_lastlogin"`

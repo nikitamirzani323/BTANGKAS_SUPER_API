@@ -2,6 +2,7 @@ package models
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"strconv"
 	"time"
@@ -256,6 +257,7 @@ func Fetch_companyadminHome() (helpers.Responsecompanyadmin, error) {
 		obj.Companyadmin_idrule = companyrule_adminrule_db
 		obj.Companyadmin_idcompany = idcompany_db
 		obj.Companyadmin_tipe = tipeadmincompany_db
+		obj.Companyadmin_nmrule = _Get_infoadminrule(idcompany_db, companyrule_adminrule_db)
 		obj.Companyadmin_username = company_username_db
 		obj.Companyadmin_ipaddress = company_ipaddress_db
 		obj.Companyadmin_lastlogin = company_lastloginadmin_db
@@ -497,8 +499,10 @@ func Save_companyadmin(admin, idrecord, idcompany, username, password, name, pho
 			`
 			startjoin := tglnow.Format("YYYY-MM-DD HH:mm:ss")
 			hashpass := helpers.HashPasswordMD5(password)
+			field_column := database_companyadmin_local + tglnow.Format("YYYY")
+			idrecord_counter := Get_counter(field_column)
 			flag_insert, msg_insert := Exec_SQL(sql_insert, database_companyadmin_local, "INSERT",
-				idrecord, idrule, idcompany, "MASTER",
+				idcompany+tglnow.Format("YY")+strconv.Itoa(idrecord_counter), idrule, idcompany, "MASTER",
 				username, hashpass, startjoin,
 				name, phone1, phone2, status,
 				admin, startjoin)
@@ -561,4 +565,24 @@ func Save_companyadmin(admin, idrecord, idcompany, username, password, name, pho
 	res.Time = time.Since(render_page).String()
 
 	return res, nil
+}
+func _Get_infoadminrule(idcompany string, idrecord int) string {
+	con := db.CreateCon()
+	ctx := context.Background()
+	companyrule_name := ""
+	sql_select := `SELECT
+			companyrule_name    
+			FROM ` + database_companyadminrule_local + `  
+			WHERE companyrule_adminrule=` + strconv.Itoa(idrecord) + ` AND idcompany='` + idcompany + `'    
+		`
+
+	row := con.QueryRowContext(ctx, sql_select)
+	switch e := row.Scan(&companyrule_name); e {
+	case sql.ErrNoRows:
+	case nil:
+	default:
+		helpers.ErrorCheck(e)
+	}
+
+	return companyrule_name
 }

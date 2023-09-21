@@ -164,6 +164,7 @@ func Companyadminhome(c *fiber.Ctx) error {
 		companyadmin_idrule, _ := jsonparser.GetInt(value, "companyadmin_idrule")
 		companyadmin_idcompany, _ := jsonparser.GetString(value, "companyadmin_idcompany")
 		companyadmin_tipe, _ := jsonparser.GetString(value, "companyadmin_tipe")
+		companyadmin_nmrule, _ := jsonparser.GetString(value, "companyadmin_nmrule")
 		companyadmin_username, _ := jsonparser.GetString(value, "companyadmin_username")
 		companyadmin_ipaddress, _ := jsonparser.GetString(value, "companyadmin_ipaddress")
 		companyadmin_lastlogin, _ := jsonparser.GetString(value, "companyadmin_lastlogin")
@@ -179,6 +180,7 @@ func Companyadminhome(c *fiber.Ctx) error {
 		obj.Companyadmin_idcompany = companyadmin_idcompany
 		obj.Companyadmin_idrule = int(companyadmin_idrule)
 		obj.Companyadmin_tipe = companyadmin_tipe
+		obj.Companyadmin_nmrule = companyadmin_nmrule
 		obj.Companyadmin_username = companyadmin_username
 		obj.Companyadmin_ipaddress = companyadmin_ipaddress
 		obj.Companyadmin_lastlogin = companyadmin_lastlogin
