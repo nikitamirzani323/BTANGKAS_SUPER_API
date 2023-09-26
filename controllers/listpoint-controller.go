@@ -13,7 +13,7 @@ import (
 	"github.com/nikitamirzani323/BTANGKAS_SUPER_API/models"
 )
 
-const Fieldlistpoint_home_redis = "LISTLISTPOINT_BACKEND"
+const Fieldlistpoint_home_redis = "LISTPOINT_BACKEND"
 const Fieldlistpoint_home_client_redis = "LISTPOINT_FRONTEND"
 
 func Listpointhome(c *fiber.Ctx) error {
@@ -28,6 +28,7 @@ func Listpointhome(c *fiber.Ctx) error {
 		lispoint_code, _ := jsonparser.GetString(value, "lispoint_code")
 		lispoint_name, _ := jsonparser.GetString(value, "lispoint_name")
 		lispoint_point, _ := jsonparser.GetInt(value, "lispoint_point")
+		lispoint_display, _ := jsonparser.GetInt(value, "lispoint_display")
 		lispoint_create, _ := jsonparser.GetString(value, "lispoint_create")
 		lispoint_update, _ := jsonparser.GetString(value, "lispoint_update")
 
@@ -35,6 +36,7 @@ func Listpointhome(c *fiber.Ctx) error {
 		obj.Lispoint_code = lispoint_code
 		obj.Lispoint_name = lispoint_name
 		obj.Lispoint_point = int(lispoint_point)
+		obj.Lispoint_display = int(lispoint_display)
 		obj.Lispoint_create = lispoint_create
 		obj.Lispoint_update = lispoint_update
 		arraobj = append(arraobj, obj)
@@ -100,7 +102,7 @@ func ListpointSave(c *fiber.Ctx) error {
 	// admin, code, name, sData string, idrecord int
 	result, err := models.Save_listpoint(
 		client_admin,
-		client.Lispoint_code, client.Lispoint_name, client.Sdata, client.Lispoint_id, client.Lispoint_point)
+		client.Lispoint_code, client.Lispoint_name, client.Sdata, client.Lispoint_id, client.Lispoint_point, client.Lispoint_display)
 	if err != nil {
 		c.Status(fiber.StatusBadRequest)
 		return c.JSON(fiber.Map{
