@@ -333,6 +333,61 @@ func Fetch_companyadminHome() (helpers.Responsecompanyadmin, error) {
 
 	return res, nil
 }
+func Fetch_companyListBet(idcompany string) (helpers.Response, error) {
+	var obj entities.Model_company_listbet
+	var arraobj []entities.Model_company_listbet
+	var res helpers.Response
+	msg := "Data Not Found"
+	con := db.CreateCon()
+	ctx := context.Background()
+	start := time.Now()
+
+	tbl_mst_listbet := Get_mappingdatabase(idcompany)
+
+	sql_select := `SELECT 
+			idbet_listbet, minbet_listbet, 
+			create_listbet, to_char(COALESCE(createdate_listbet,now()), 'YYYY-MM-DD HH24:MI:SS'), 
+			update_listbet, to_char(COALESCE(updatedate_listbet,now()), 'YYYY-MM-DD HH24:MI:SS') 
+			FROM ` + tbl_mst_listbet + `  
+			ORDER BY createdate_listbet DESC   `
+
+	row, err := con.QueryContext(ctx, sql_select)
+	helpers.ErrorCheck(err)
+	for row.Next() {
+		var (
+			idbet_listbet_db                                                                   int
+			minbet_listbet_db                                                                  float64
+			create_listbet_db, createdate_listbet_db, update_listbet_db, updatedate_listbet_db string
+		)
+
+		err = row.Scan(&idbet_listbet_db, &minbet_listbet_db,
+			&create_listbet_db, &createdate_listbet_db, &update_listbet_db, &updatedate_listbet_db)
+
+		helpers.ErrorCheck(err)
+		create := ""
+		update := ""
+		if create_listbet_db != "" {
+			create = create_listbet_db + ", " + createdate_listbet_db
+		}
+		if update_listbet_db != "" {
+			update = update_listbet_db + ", " + update_listbet_db
+		}
+		obj.Companylistbet_id = idbet_listbet_db
+		obj.Companylistbet_minbet = minbet_listbet_db
+		obj.Companylistbet_create = create
+		obj.Companylistbet_update = update
+		arraobj = append(arraobj, obj)
+		msg = "Success"
+	}
+	defer row.Close()
+
+	res.Status = fiber.StatusOK
+	res.Message = msg
+	res.Record = arraobj
+	res.Time = time.Since(start).String()
+
+	return res, nil
+}
 func Save_company(admin, idrecord, idcurr, nmcompany, nmowner, phoneowner, emailowner, url, status, sData string) (helpers.Response, error) {
 	var res helpers.Response
 	msg := "Failed"

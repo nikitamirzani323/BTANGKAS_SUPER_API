@@ -14,6 +14,7 @@ import (
 )
 
 const Fieldcompany_home_redis = "COMPANY_BACKEND"
+const Fieldcompanylistbet_home_redis = "COMPANYLISTBET_BACKEND"
 const Fieldcompanyadminrule_home_redis = "COMPANYADMINRULE_BACKEND"
 const Fieldcompanyadmin_home_redis = "COMPANYADMIN_BACKEND"
 const Fieldcompany_home_client_redis = "COMPANY_FRONTEND"
@@ -236,6 +237,77 @@ func Companyadminhome(c *fiber.Ctx) error {
 		})
 	}
 }
+func Companylistbethome(c *fiber.Ctx) error {
+	var errors []*helpers.ErrorResponse
+	client := new(entities.Controller_companylistbet)
+	validate := validator.New()
+	if err := c.BodyParser(client); err != nil {
+		c.Status(fiber.StatusBadRequest)
+		return c.JSON(fiber.Map{
+			"status":  fiber.StatusBadRequest,
+			"message": err.Error(),
+			"record":  nil,
+		})
+	}
+
+	err := validate.Struct(client)
+	if err != nil {
+		for _, err := range err.(validator.ValidationErrors) {
+			var element helpers.ErrorResponse
+			element.Field = err.StructField()
+			element.Tag = err.Tag()
+			errors = append(errors, &element)
+		}
+		c.Status(fiber.StatusBadRequest)
+		return c.JSON(fiber.Map{
+			"status":  fiber.StatusBadRequest,
+			"message": "validation",
+			"record":  errors,
+		})
+	}
+
+	var obj entities.Model_company_listbet
+	var arraobj []entities.Model_company_listbet
+	render_page := time.Now()
+	resultredis, flag := helpers.GetRedis(Fieldcompanylistbet_home_redis + "_" + client.Company_id)
+	jsonredis := []byte(resultredis)
+	record_RD, _, _, _ := jsonparser.Get(jsonredis, "record")
+	jsonparser.ArrayEach(record_RD, func(value []byte, dataType jsonparser.ValueType, offset int, err error) {
+		companylistbet_id, _ := jsonparser.GetInt(value, "companylistbet_id")
+		companylistbet_minbet, _ := jsonparser.GetFloat(value, "companylistbet_minbet")
+		companylistbet_create, _ := jsonparser.GetString(value, "companylistbet_create")
+		companylistbet_update, _ := jsonparser.GetString(value, "companylistbet_update")
+
+		obj.Companylistbet_id = int(companylistbet_id)
+		obj.Companylistbet_minbet = float64(companylistbet_minbet)
+		obj.Companylistbet_create = companylistbet_create
+		obj.Companylistbet_update = companylistbet_update
+		arraobj = append(arraobj, obj)
+	})
+
+	if !flag {
+		result, err := models.Fetch_companyListBet(client.Company_id)
+		if err != nil {
+			c.Status(fiber.StatusBadRequest)
+			return c.JSON(fiber.Map{
+				"status":  fiber.StatusBadRequest,
+				"message": err.Error(),
+				"record":  nil,
+			})
+		}
+		helpers.SetRedis(Fieldcompanylistbet_home_redis+"_"+client.Company_id, result, 60*time.Minute)
+		fmt.Println("COMPANY LISTBET MYSQL")
+		return c.JSON(result)
+	} else {
+		fmt.Println("COMPANY LISTBET CACHE")
+		return c.JSON(fiber.Map{
+			"status":  fiber.StatusOK,
+			"message": "Success",
+			"record":  arraobj,
+			"time":    time.Since(render_page).String(),
+		})
+	}
+}
 func CompanySave(c *fiber.Ctx) error {
 	var errors []*helpers.ErrorResponse
 	client := new(entities.Controller_companysave)
@@ -286,7 +358,7 @@ func CompanySave(c *fiber.Ctx) error {
 		})
 	}
 
-	_deleteredis_company()
+	_deleteredis_company("")
 	return c.JSON(result)
 }
 func CompanyadminruleSave(c *fiber.Ctx) error {
@@ -337,7 +409,7 @@ func CompanyadminruleSave(c *fiber.Ctx) error {
 		})
 	}
 
-	_deleteredis_company()
+	_deleteredis_company("")
 	return c.JSON(result)
 }
 func CompanyadminSave(c *fiber.Ctx) error {
@@ -389,10 +461,10 @@ func CompanyadminSave(c *fiber.Ctx) error {
 		})
 	}
 
-	_deleteredis_company()
+	_deleteredis_company("")
 	return c.JSON(result)
 }
-func _deleteredis_company() {
+func _deleteredis_company(idcompany string) {
 	val_master := helpers.DeleteRedis(Fieldcompany_home_redis)
 	fmt.Printf("Redis Delete BACKEND COMPANY : %d", val_master)
 
@@ -401,4 +473,7 @@ func _deleteredis_company() {
 
 	val_master_adminrule := helpers.DeleteRedis(Fieldcompanyadminrule_home_redis)
 	fmt.Printf("Redis Delete BACKEND COMPANY ADMIN RULE : %d", val_master_adminrule)
+
+	val_master_listbet := helpers.DeleteRedis(Fieldcompanylistbet_home_redis + "_" + idcompany)
+	fmt.Printf("Redis Delete BACKEND COMPANY LISTBET : %d", val_master_listbet)
 }

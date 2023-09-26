@@ -5,6 +5,7 @@ const (
 	DB_tbl_admin                 string = "tbl_admin"
 	DB_tbl_admingroup            string = "tbl_admingroup"
 	DB_tbl_mst_listpoint         string = "tbl_mst_listpoint"
+	DB_tbl_mst_listbet           string = "tbl_mst_listbet"
 	DB_tbl_mst_curr              string = "tbl_mst_currency"
 	DB_tbl_mst_company           string = "tbl_mst_company"
 	DB_tbl_mst_company_adminrule string = "tbl_mst_company_adminrule"
