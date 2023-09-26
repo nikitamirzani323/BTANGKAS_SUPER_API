@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"fmt"
+	"strconv"
 	"time"
 
 	"github.com/buger/jsonparser"
@@ -15,6 +16,7 @@ import (
 
 const Fieldcompany_home_redis = "COMPANY_BACKEND"
 const Fieldcompanylistbet_home_redis = "COMPANYLISTBET_BACKEND"
+const Fieldcompanyconf_home_redis = "COMPANYCONF_BACKEND"
 const Fieldcompanyadminrule_home_redis = "COMPANYADMINRULE_BACKEND"
 const Fieldcompanyadmin_home_redis = "COMPANYADMIN_BACKEND"
 const Fieldcompany_home_client_redis = "COMPANY_FRONTEND"
@@ -249,7 +251,7 @@ func Companylistbethome(c *fiber.Ctx) error {
 			"record":  nil,
 		})
 	}
-
+	fmt.Println(client.Company_id)
 	err := validate.Struct(client)
 	if err != nil {
 		for _, err := range err.(validator.ValidationErrors) {
@@ -308,6 +310,83 @@ func Companylistbethome(c *fiber.Ctx) error {
 		})
 	}
 }
+func Companyconfpointhome(c *fiber.Ctx) error {
+	var errors []*helpers.ErrorResponse
+	client := new(entities.Controller_companyconfpoint)
+	validate := validator.New()
+	if err := c.BodyParser(client); err != nil {
+		c.Status(fiber.StatusBadRequest)
+		return c.JSON(fiber.Map{
+			"status":  fiber.StatusBadRequest,
+			"message": err.Error(),
+			"record":  nil,
+		})
+	}
+	fmt.Println(client.Company_id)
+	err := validate.Struct(client)
+	if err != nil {
+		for _, err := range err.(validator.ValidationErrors) {
+			var element helpers.ErrorResponse
+			element.Field = err.StructField()
+			element.Tag = err.Tag()
+			errors = append(errors, &element)
+		}
+		c.Status(fiber.StatusBadRequest)
+		return c.JSON(fiber.Map{
+			"status":  fiber.StatusBadRequest,
+			"message": "validation",
+			"record":  errors,
+		})
+	}
+
+	var obj entities.Model_company_conf
+	var arraobj []entities.Model_company_conf
+	render_page := time.Now()
+	resultredis, flag := helpers.GetRedis(Fieldcompanyconf_home_redis + "_" + strconv.Itoa(client.Company_idbet) + "_" + client.Company_id)
+	jsonredis := []byte(resultredis)
+	record_RD, _, _, _ := jsonparser.Get(jsonredis, "record")
+	jsonparser.ArrayEach(record_RD, func(value []byte, dataType jsonparser.ValueType, offset int, err error) {
+		companyconf_id, _ := jsonparser.GetInt(value, "companyconf_id")
+		companyconf_idbet, _ := jsonparser.GetInt(value, "companyconf_idbet")
+		companyconf_idpoin, _ := jsonparser.GetInt(value, "companyconf_idpoin")
+		companyconf_nmpoin, _ := jsonparser.GetString(value, "companyconf_nmpoin")
+		companyconf_poin, _ := jsonparser.GetInt(value, "companyconf_poin")
+		companyconf_create, _ := jsonparser.GetString(value, "companyconf_create")
+		companyconf_update, _ := jsonparser.GetString(value, "companyconf_update")
+
+		obj.Companyconf_id = int(companyconf_id)
+		obj.Companyconf_idbet = int(companyconf_idbet)
+		obj.Companyconf_idpoin = int(companyconf_idpoin)
+		obj.Companyconf_nmpoin = companyconf_nmpoin
+		obj.Companyconf_poin = int(companyconf_poin)
+		obj.Companyconf_create = companyconf_create
+		obj.Companyconf_update = companyconf_update
+		arraobj = append(arraobj, obj)
+	})
+
+	if !flag {
+		result, err := models.Fetch_companyConfPoint(client.Company_idbet, client.Company_id)
+		if err != nil {
+			c.Status(fiber.StatusBadRequest)
+			return c.JSON(fiber.Map{
+				"status":  fiber.StatusBadRequest,
+				"message": err.Error(),
+				"record":  nil,
+			})
+		}
+		helpers.SetRedis(Fieldcompanyconf_home_redis+"_"+strconv.Itoa(client.Company_idbet)+"_"+client.Company_id, result, 60*time.Minute)
+		fmt.Println("COMPANY CONF MYSQL")
+		return c.JSON(result)
+	} else {
+		fmt.Println("COMPANY CONF CACHE")
+		return c.JSON(fiber.Map{
+			"status":  fiber.StatusOK,
+			"message": "Success",
+			"record":  arraobj,
+			"time":    time.Since(render_page).String(),
+		})
+	}
+}
 func CompanySave(c *fiber.Ctx) error {
 	var errors []*helpers.ErrorResponse
 	client := new(entities.Controller_companysave)
@@ -358,7 +437,7 @@ func CompanySave(c *fiber.Ctx) error {
 		})
 	}
 
-	_deleteredis_company("")
+	_deleteredis_company(0, "")
 	return c.JSON(result)
 }
 func CompanyadminruleSave(c *fiber.Ctx) error {
@@ -409,7 +488,7 @@ func CompanyadminruleSave(c *fiber.Ctx) error {
 		})
 	}
 
-	_deleteredis_company("")
+	_deleteredis_company(0, "")
 	return c.JSON(result)
 }
 func CompanyadminSave(c *fiber.Ctx) error {
@@ -461,10 +540,112 @@ func CompanyadminSave(c *fiber.Ctx) error {
 		})
 	}
 
-	_deleteredis_company("")
+	_deleteredis_company(0, "")
 	return c.JSON(result)
 }
-func _deleteredis_company(idcompany string) {
+func CompanylistbetSave(c *fiber.Ctx) error {
+	var errors []*helpers.ErrorResponse
+	client := new(entities.Controller_companylistbetsave)
+	validate := validator.New()
+	if err := c.BodyParser(client); err != nil {
+		c.Status(fiber.StatusBadRequest)
+		return c.JSON(fiber.Map{
+			"status":  fiber.StatusBadRequest,
+			"message": err.Error(),
+			"record":  nil,
+		})
+	}
+
+	err := validate.Struct(client)
+	if err != nil {
+		for _, err := range err.(validator.ValidationErrors) {
+			var element helpers.ErrorResponse
+			element.Field = err.StructField()
+			element.Tag = err.Tag()
+			errors = append(errors, &element)
+		}
+		c.Status(fiber.StatusBadRequest)
+		return c.JSON(fiber.Map{
+			"status":  fiber.StatusBadRequest,
+			"message": "validation",
+			"record":  errors,
+		})
+	}
+	user := c.Locals("jwt").(*jwt.Token)
+	claims := user.Claims.(jwt.MapClaims)
+	name := claims["name"].(string)
+	temp_decp := helpers.Decryption(name)
+	client_admin, _ := helpers.Parsing_Decry(temp_decp, "==")
+
+	// admin, idcompany, sData string, idrecord, minbet int
+	result, err := models.Save_companyListBet(
+		client_admin,
+		client.Companylistbet_idcompany,
+		client.Sdata, client.Companylistbet_id, client.Companylistbet_minbet)
+	if err != nil {
+		c.Status(fiber.StatusBadRequest)
+		return c.JSON(fiber.Map{
+			"status":  fiber.StatusBadRequest,
+			"message": err.Error(),
+			"record":  nil,
+		})
+	}
+
+	_deleteredis_company(0, client.Companylistbet_idcompany)
+	return c.JSON(result)
+}
+func CompanyconfpointSave(c *fiber.Ctx) error {
+	var errors []*helpers.ErrorResponse
+	client := new(entities.Controller_companyconfpointsave)
+	validate := validator.New()
+	if err := c.BodyParser(client); err != nil {
+		c.Status(fiber.StatusBadRequest)
+		return c.JSON(fiber.Map{
+			"status":  fiber.StatusBadRequest,
+			"message": err.Error(),
+			"record":  nil,
+		})
+	}
+
+	err := validate.Struct(client)
+	if err != nil {
+		for _, err := range err.(validator.ValidationErrors) {
+			var element helpers.ErrorResponse
+			element.Field = err.StructField()
+			element.Tag = err.Tag()
+			errors = append(errors, &element)
+		}
+		c.Status(fiber.StatusBadRequest)
+		return c.JSON(fiber.Map{
+			"status":  fiber.StatusBadRequest,
+			"message": "validation",
+			"record":  errors,
+		})
+	}
+	user := c.Locals("jwt").(*jwt.Token)
+	claims := user.Claims.(jwt.MapClaims)
+	name := claims["name"].(string)
+	temp_decp := helpers.Decryption(name)
+	client_admin, _ := helpers.Parsing_Decry(temp_decp, "==")
+
+	// admin, idcompany, sData string, idrecord, idbet, point int
+	result, err := models.Save_companyConfPoint(
+		client_admin,
+		client.Companyconfpoint_idcompany,
+		client.Sdata, client.Companyconfpoint_id, client.Companyconfpoint_idbet, client.Companyconfpoint_point)
+	if err != nil {
+		c.Status(fiber.StatusBadRequest)
+		return c.JSON(fiber.Map{
+			"status":  fiber.StatusBadRequest,
+			"message": err.Error(),
+			"record":  nil,
+		})
+	}
+
+	_deleteredis_company(client.Companyconfpoint_idbet, client.Companyconfpoint_idcompany)
+	return c.JSON(result)
+}
+func _deleteredis_company(idbet int, idcompany string) {
 	val_master := helpers.DeleteRedis(Fieldcompany_home_redis)
 	fmt.Printf("Redis Delete BACKEND COMPANY : %d", val_master)
 
@@ -476,4 +657,7 @@ func _deleteredis_company(idcompany string) {
 
 	val_master_listbet := helpers.DeleteRedis(Fieldcompanylistbet_home_redis + "_" + idcompany)
 	fmt.Printf("Redis Delete BACKEND COMPANY LISTBET : %d", val_master_listbet)
+
+	val_master_confbet := helpers.DeleteRedis(Fieldcompanyconf_home_redis + "_" + strconv.Itoa(idbet) + "_" + idcompany)
+	fmt.Printf("Redis Delete BACKEND COMPANY CONF POINT : %d", val_master_confbet)
 }

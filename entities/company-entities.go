@@ -21,6 +21,16 @@ type Model_company_listbet struct {
 	Companylistbet_create string  `json:"companylistbet_create"`
 	Companylistbet_update string  `json:"companylistbet_update"`
 }
+type Model_company_conf struct {
+	Companyconf_id     int    `json:"companyconf_id"`
+	Companyconf_idbet  int    `json:"companyconf_idbet"`
+	Companyconf_idpoin int    `json:"companyconf_idpoin"`
+	Companyconf_nmpoin string `json:"companyconf_nmpoin"`
+	Companyconf_poin   int    `json:"companyconf_poin"`
+	Companyconf_create string `json:"companyconf_create"`
+	Companyconf_update string `json:"companyconf_update"`
+}
+
 type Model_companyshare struct {
 	Company_id   string `json:"company_id"`
 	Company_name string `json:"company_name"`
@@ -47,4 +57,16 @@ type Controller_companylistbetsave struct {
 }
 type Controller_companylistbet struct {
 	Company_id string `json:"company_id" validate:"required"`
+}
+type Controller_companyconfpoint struct {
+	Company_idbet int    `json:"company_idbet" validate:"required"`
+	Company_id    string `json:"company_id" validate:"required"`
+}
+type Controller_companyconfpointsave struct {
+	Page                       string `json:"page" validate:"required"`
+	Sdata                      string `json:"sdata" validate:"required"`
+	Companyconfpoint_id        int    `json:"companyconfpoint_id"`
+	Companyconfpoint_idbet     int    `json:"companyconfpoint_idbet" validate:"required"`
+	Companyconfpoint_idcompany string `json:"companyconfpoint_idcompany" validate:"required"`
+	Companyconfpoint_point     int    `json:"companyconfpoint_point" `
 }

@@ -342,7 +342,7 @@ func Fetch_companyListBet(idcompany string) (helpers.Response, error) {
 	ctx := context.Background()
 	start := time.Now()
 
-	tbl_mst_listbet := Get_mappingdatabase(idcompany)
+	tbl_mst_listbet, _ := Get_mappingdatabase(idcompany)
 
 	sql_select := `SELECT 
 			idbet_listbet, minbet_listbet, 
@@ -376,6 +376,64 @@ func Fetch_companyListBet(idcompany string) (helpers.Response, error) {
 		obj.Companylistbet_minbet = minbet_listbet_db
 		obj.Companylistbet_create = create
 		obj.Companylistbet_update = update
+		arraobj = append(arraobj, obj)
+		msg = "Success"
+	}
+	defer row.Close()
+
+	res.Status = fiber.StatusOK
+	res.Message = msg
+	res.Record = arraobj
+	res.Time = time.Since(start).String()
+
+	return res, nil
+}
+func Fetch_companyConfPoint(idbet int, idcompany string) (helpers.Response, error) {
+	var obj entities.Model_company_conf
+	var arraobj []entities.Model_company_conf
+	var res helpers.Response
+	msg := "Data Not Found"
+	con := db.CreateCon()
+	ctx := context.Background()
+	start := time.Now()
+
+	_, tbl_mst_config := Get_mappingdatabase(idcompany)
+
+	sql_select := `SELECT 
+			idconf_conf, idbet_listbet, idpoin, poin_conf,  
+			create_conf, to_char(COALESCE(createdate_conf,now()), 'YYYY-MM-DD HH24:MI:SS'), 
+			update_conf, to_char(COALESCE(updatedate_conf,now()), 'YYYY-MM-DD HH24:MI:SS') 
+			FROM ` + tbl_mst_config + `   
+			WHERE idbet_listbet=$1 
+			ORDER BY createdate_conf DESC   `
+
+	row, err := con.QueryContext(ctx, sql_select, idbet)
+	helpers.ErrorCheck(err)
+	for row.Next() {
+		var (
+			idconf_conf_db, idbet_listbet_db, idpoin_db, poin_conf_db              int
+			create_conf_db, createdate_conf_db, update_conf_db, updatedate_conf_db string
+		)
+
+		err = row.Scan(&idconf_conf_db, &idbet_listbet_db, &idpoin_db, &poin_conf_db,
+			&create_conf_db, &createdate_conf_db, &update_conf_db, &updatedate_conf_db)
+
+		helpers.ErrorCheck(err)
+		create := ""
+		update := ""
+		if create_conf_db != "" {
+			create = create_conf_db + ", " + createdate_conf_db
+		}
+		if update_conf_db != "" {
+			update = update_conf_db + ", " + updatedate_conf_db
+		}
+		obj.Companyconf_id = idconf_conf_db
+		obj.Companyconf_idbet = idbet_listbet_db
+		obj.Companyconf_idpoin = idpoin_db
+		obj.Companyconf_nmpoin = _Get_infomasterpoint(idpoin_db)
+		obj.Companyconf_poin = poin_conf_db
+		obj.Companyconf_create = create
+		obj.Companyconf_update = update
 		arraobj = append(arraobj, obj)
 		msg = "Success"
 	}
@@ -621,6 +679,149 @@ func Save_companyadmin(admin, idrecord, idcompany, username, password, name, pho
 
 	return res, nil
 }
+func Save_companyListBet(admin, idcompany, sData string, idrecord, minbet int) (helpers.Response, error) {
+	var res helpers.Response
+	msg := "Failed"
+	tglnow, _ := goment.New()
+	render_page := time.Now()
+	flag := false
+	tbl_mst_listbet, _ := Get_mappingdatabase(idcompany)
+
+	if sData == "New" {
+		flag = CheckDBTwoField(tbl_mst_listbet, "idcompany", idcompany, "minbet_listbet", strconv.Itoa(minbet))
+		if !flag {
+			sql_insert := `
+			insert into
+			` + tbl_mst_listbet + ` (
+				idbet_listbet , idcompany, minbet_listbet,    
+				create_listbet, createdate_listbet 
+			) values (
+				$1, $2, $3,    
+				$4, $5    
+			)
+		`
+			field_column := idcompany + "_" + tbl_mst_listbet + tglnow.Format("YYYY")
+			idrecord_counter := Get_counter(field_column)
+			flag_insert, msg_insert := Exec_SQL(sql_insert, tbl_mst_listbet, "INSERT",
+				tglnow.Format("YY")+strconv.Itoa(idrecord_counter), idcompany, minbet,
+				admin, tglnow.Format("YYYY-MM-DD HH:mm:ss"))
+
+			if flag_insert {
+				msg = "Succes"
+			} else {
+				fmt.Println(msg_insert)
+			}
+		} else {
+			msg = "Duplicate Entry"
+		}
+	} else {
+		sql_update := `
+			UPDATE 
+			` + tbl_mst_listbet + `  
+			SET minbet_listbet=$1,  
+			updatecompany=$2, updatedatecompany=$3       
+			WHERE idbet_listbet=$4 AND idcompany=$5      
+		`
+
+		flag_update, msg_update := Exec_SQL(sql_update, tbl_mst_listbet, "UPDATE",
+			minbet,
+			admin, tglnow.Format("YYYY-MM-DD HH:mm:ss"), idrecord, idcompany)
+
+		if flag_update {
+			msg = "Succes"
+		} else {
+			fmt.Println(msg_update)
+		}
+
+	}
+
+	res.Status = fiber.StatusOK
+	res.Message = msg
+	res.Record = nil
+	res.Time = time.Since(render_page).String()
+
+	return res, nil
+}
+func Save_companyConfPoint(admin, idcompany, sData string, idrecord, idbet, point int) (helpers.Response, error) {
+	var res helpers.Response
+	con := db.CreateCon()
+	ctx := context.Background()
+	msg := "Failed"
+	tglnow, _ := goment.New()
+	render_page := time.Now()
+	flag := false
+
+	_, tbl_mst_config := Get_mappingdatabase(idcompany)
+
+	if sData == "New" {
+		sql_select := `SELECT 
+				idpoin , poin
+				FROM ` + configs.DB_tbl_mst_listpoint + `  
+				ORDER BY display_listpoint ASC   `
+
+		row, err := con.QueryContext(ctx, sql_select)
+		helpers.ErrorCheck(err)
+		for row.Next() {
+			var (
+				idpoin_db, poin_db int
+			)
+
+			err = row.Scan(&idpoin_db, &poin_db)
+			helpers.ErrorCheck(err)
+			flag = CheckDBThreeField(tbl_mst_config, "idbet_listbet", strconv.Itoa(idbet), "idcompany", idcompany, "idpoin", strconv.Itoa(idpoin_db))
+			if !flag {
+				sql_insert := `
+					insert into
+					` + tbl_mst_config + ` (
+						idconf_conf , idbet_listbet, idcompany, idpoin, poin_conf,     
+						create_conf, createdate_conf 
+					) values (
+						$1, $2, $3, $4, $5,     
+						$6, $7     
+					)
+				`
+				field_column := idcompany + "_" + tbl_mst_config + tglnow.Format("YYYY")
+				idrecord_counter := Get_counter(field_column)
+				flag_insert, msg_insert := Exec_SQL(sql_insert, tbl_mst_config, "INSERT",
+					tglnow.Format("YY")+strconv.Itoa(idrecord_counter), idbet, idcompany, idpoin_db, poin_db,
+					admin, tglnow.Format("YYYY-MM-DD HH:mm:ss"))
+
+				if flag_insert {
+					msg = "Succes"
+				} else {
+					fmt.Println(msg_insert)
+				}
+			}
+		}
+
+	} else {
+		sql_update := `
+			UPDATE 
+			` + tbl_mst_config + `  
+			SET poin_conf=$1,  
+			update_conf=$2, updatedate_conf=$3       
+			WHERE idconf_conf=$4 AND idcompany=$5      
+		`
+
+		flag_update, msg_update := Exec_SQL(sql_update, tbl_mst_config, "UPDATE",
+			point,
+			admin, tglnow.Format("YYYY-MM-DD HH:mm:ss"), idrecord, idcompany)
+
+		if flag_update {
+			msg = "Succes"
+		} else {
+			fmt.Println(msg_update)
+		}
+
+	}
+
+	res.Status = fiber.StatusOK
+	res.Message = msg
+	res.Record = nil
+	res.Time = time.Since(render_page).String()
+
+	return res, nil
+}
 func _Get_infoadminrule(idcompany string, idrecord int) string {
 	con := db.CreateCon()
 	ctx := context.Background()
@@ -640,4 +841,24 @@ func _Get_infoadminrule(idcompany string, idrecord int) string {
 	}
 
 	return companyrule_name
+}
+func _Get_infomasterpoint(idpoin int) string {
+	con := db.CreateCon()
+	ctx := context.Background()
+	nmpoin := ""
+	sql_select := `SELECT
+			nmpoin    
+			FROM ` + configs.DB_tbl_mst_listpoint + `  
+			WHERE idpoin='` + strconv.Itoa(idpoin) + `'     
+		`
+
+	row := con.QueryRowContext(ctx, sql_select)
+	switch e := row.Scan(&nmpoin); e {
+	case sql.ErrNoRows:
+	case nil:
+	default:
+		helpers.ErrorCheck(e)
+	}
+
+	return nmpoin
 }
