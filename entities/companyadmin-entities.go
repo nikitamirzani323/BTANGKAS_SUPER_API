@@ -31,3 +31,6 @@ type Controller_companyadminsave struct {
 	Companyadmin_phone2    string `json:"companyadmin_phone2"`
 	Companyadmin_status    string `json:"companyadmin_status" validate:"required"`
 }
+type Controller_companygroupcompany struct {
+	Company_id string `json:"company_id" validate:"required"`
+}

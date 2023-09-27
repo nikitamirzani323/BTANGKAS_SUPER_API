@@ -24,7 +24,6 @@ type Model_company_listbet struct {
 type Model_company_conf struct {
 	Companyconf_id     int    `json:"companyconf_id"`
 	Companyconf_idbet  int    `json:"companyconf_idbet"`
-	Companyconf_idpoin int    `json:"companyconf_idpoin"`
 	Companyconf_nmpoin string `json:"companyconf_nmpoin"`
 	Companyconf_poin   int    `json:"companyconf_poin"`
 	Companyconf_create string `json:"companyconf_create"`
@@ -48,6 +47,7 @@ type Controller_companysave struct {
 	Company_url        string `json:"company_url" validate:"required"`
 	Company_status     string `json:"company_status" validate:"required"`
 }
+
 type Controller_companylistbetsave struct {
 	Page                     string `json:"page" validate:"required"`
 	Sdata                    string `json:"sdata" validate:"required"`

@@ -239,6 +239,99 @@ func Companyadminhome(c *fiber.Ctx) error {
 		})
 	}
 }
+func CompanyadminByCompany(c *fiber.Ctx) error {
+	var errors []*helpers.ErrorResponse
+	client := new(entities.Controller_companygroupcompany)
+	validate := validator.New()
+	if err := c.BodyParser(client); err != nil {
+		c.Status(fiber.StatusBadRequest)
+		return c.JSON(fiber.Map{
+			"status":  fiber.StatusBadRequest,
+			"message": err.Error(),
+			"record":  nil,
+		})
+	}
+
+	err := validate.Struct(client)
+	if err != nil {
+		for _, err := range err.(validator.ValidationErrors) {
+			var element helpers.ErrorResponse
+			element.Field = err.StructField()
+			element.Tag = err.Tag()
+			errors = append(errors, &element)
+		}
+		c.Status(fiber.StatusBadRequest)
+		return c.JSON(fiber.Map{
+			"status":  fiber.StatusBadRequest,
+			"message": "validation",
+			"record":  errors,
+		})
+	}
+
+	var obj entities.Model_companyadmin
+	var arraobj []entities.Model_companyadmin
+	render_page := time.Now()
+	resultredis, flag := helpers.GetRedis(Fieldcompanyadmin_home_redis + "_" + client.Company_id)
+	jsonredis := []byte(resultredis)
+	record_RD, _, _, _ := jsonparser.Get(jsonredis, "record")
+	jsonparser.ArrayEach(record_RD, func(value []byte, dataType jsonparser.ValueType, offset int, err error) {
+		companyadmin_id, _ := jsonparser.GetString(value, "companyadmin_id")
+		companyadmin_idrule, _ := jsonparser.GetInt(value, "companyadmin_idrule")
+		companyadmin_idcompany, _ := jsonparser.GetString(value, "companyadmin_idcompany")
+		companyadmin_tipe, _ := jsonparser.GetString(value, "companyadmin_tipe")
+		companyadmin_nmrule, _ := jsonparser.GetString(value, "companyadmin_nmrule")
+		companyadmin_username, _ := jsonparser.GetString(value, "companyadmin_username")
+		companyadmin_ipaddress, _ := jsonparser.GetString(value, "companyadmin_ipaddress")
+		companyadmin_lastlogin, _ := jsonparser.GetString(value, "companyadmin_lastlogin")
+		companyadmin_name, _ := jsonparser.GetString(value, "companyadmin_name")
+		companyadmin_phone1, _ := jsonparser.GetString(value, "companyadmin_phone1")
+		companyadmin_phone2, _ := jsonparser.GetString(value, "companyadmin_phone2")
+		companyadmin_status, _ := jsonparser.GetString(value, "companyadmin_status")
+		companyadmin_status_css, _ := jsonparser.GetString(value, "companyadmin_status_css")
+		companyadmin_create, _ := jsonparser.GetString(value, "companyadmin_create")
+		companyadmin_update, _ := jsonparser.GetString(value, "companyadmin_update")
+
+		obj.Companyadmin_id = companyadmin_id
+		obj.Companyadmin_idcompany = companyadmin_idcompany
+		obj.Companyadmin_idrule = int(companyadmin_idrule)
+		obj.Companyadmin_tipe = companyadmin_tipe
+		obj.Companyadmin_nmrule = companyadmin_nmrule
+		obj.Companyadmin_username = companyadmin_username
+		obj.Companyadmin_ipaddress = companyadmin_ipaddress
+		obj.Companyadmin_lastlogin = companyadmin_lastlogin
+		obj.Companyadmin_name = companyadmin_name
+		obj.Companyadmin_phone1 = companyadmin_phone1
+		obj.Companyadmin_phone2 = companyadmin_phone2
+		obj.Companyadmin_status = companyadmin_status
+		obj.Companyadmin_status_css = companyadmin_status_css
+		obj.Companyadmin_create = companyadmin_create
+		obj.Companyadmin_update = companyadmin_update
+		arraobj = append(arraobj, obj)
+	})
+
+	if !flag {
+		result, err := models.Fetch_companyadminByCompany(client.Company_id)
+		if err != nil {
+			c.Status(fiber.StatusBadRequest)
+			return c.JSON(fiber.Map{
+				"status":  fiber.StatusBadRequest,
+				"message": err.Error(),
+				"record":  nil,
+			})
+		}
+		helpers.SetRedis(Fieldcompanyadmin_home_redis+"_"+client.Company_id, result, 60*time.Minute)
+		fmt.Println("COMPANY ADMIN BY COMPANY  MYSQL")
+		return c.JSON(result)
+	} else {
+		fmt.Println("COMPANY ADMIN BY COMPANY CACHE")
+		return c.JSON(fiber.Map{
+			"status":  fiber.StatusOK,
+			"message": "Success",
+			"record":  arraobj,
+			"time":    time.Since(render_page).String(),
+		})
+	}
+}
 func Companylistbethome(c *fiber.Ctx) error {
 	var errors []*helpers.ErrorResponse
 	client := new(entities.Controller_companylistbet)
@@ -348,7 +441,6 @@ func Companyconfpointhome(c *fiber.Ctx) error {
 	jsonparser.ArrayEach(record_RD, func(value []byte, dataType jsonparser.ValueType, offset int, err error) {
 		companyconf_id, _ := jsonparser.GetInt(value, "companyconf_id")
 		companyconf_idbet, _ := jsonparser.GetInt(value, "companyconf_idbet")
-		companyconf_idpoin, _ := jsonparser.GetInt(value, "companyconf_idpoin")
 		companyconf_nmpoin, _ := jsonparser.GetString(value, "companyconf_nmpoin")
 		companyconf_poin, _ := jsonparser.GetInt(value, "companyconf_poin")
 		companyconf_create, _ := jsonparser.GetString(value, "companyconf_create")
@@ -356,7 +448,6 @@ func Companyconfpointhome(c *fiber.Ctx) error {
 
 		obj.Companyconf_id = int(companyconf_id)
 		obj.Companyconf_idbet = int(companyconf_idbet)
-		obj.Companyconf_idpoin = int(companyconf_idpoin)
 		obj.Companyconf_nmpoin = companyconf_nmpoin
 		obj.Companyconf_poin = int(companyconf_poin)
 		obj.Companyconf_create = companyconf_create
@@ -648,6 +739,9 @@ func CompanyconfpointSave(c *fiber.Ctx) error {
 func _deleteredis_company(idbet int, idcompany string) {
 	val_master := helpers.DeleteRedis(Fieldcompany_home_redis)
 	fmt.Printf("Redis Delete BACKEND COMPANY : %d", val_master)
+
+	val_master_admin_bycompany := helpers.DeleteRedis(Fieldcompanyadmin_home_redis + "_" + idcompany)
+	fmt.Printf("Redis Delete BACKEND COMPANY ADMIN GROUP COMPANY  : %d", val_master_admin_bycompany)
 
 	val_master_admin := helpers.DeleteRedis(Fieldcompanyadmin_home_redis)
 	fmt.Printf("Redis Delete BACKEND COMPANY ADMIN  : %d", val_master_admin)

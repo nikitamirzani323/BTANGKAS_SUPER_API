@@ -333,6 +333,85 @@ func Fetch_companyadminHome() (helpers.Responsecompanyadmin, error) {
 
 	return res, nil
 }
+func Fetch_companyadminByCompany(idcompany string) (helpers.Response, error) {
+	var obj entities.Model_companyadmin
+	var arraobj []entities.Model_companyadmin
+	var res helpers.Response
+	msg := "Data Not Found"
+	con := db.CreateCon()
+	ctx := context.Background()
+	start := time.Now()
+
+	sql_select := `SELECT 
+			company_idadmin, companyrule_adminrule, idcompany, tipeadmincompany, 
+			company_username, company_ipaddress, 
+			to_char(COALESCE(company_lastloginadmin,now()), 'YYYY-MM-DD HH24:MI:SS'),
+			company_name, company_phone1, company_phone2, company_status,
+			createadmin_company, to_char(COALESCE(createadmindate_company,now()), 'YYYY-MM-DD HH24:MI:SS'), 
+			updateadmin_company, to_char(COALESCE(updateadmindate_company,now()), 'YYYY-MM-DD HH24:MI:SS') 
+			FROM ` + database_companyadmin_local + `  
+			WHERE idcompany=$1 
+			ORDER BY createadmindate_company DESC   `
+
+	row, err := con.QueryContext(ctx, sql_select, idcompany)
+	helpers.ErrorCheck(err)
+	for row.Next() {
+		var (
+			companyrule_adminrule_db                                                                                                                       int
+			company_idadmin_db, idcompany_db, tipeadmincompany_db                                                                                          string
+			company_username_db, company_ipaddress_db, company_lastloginadmin_db, company_name_db, company_phone1_db, company_phone2_db, company_status_db string
+			createadmin_company_db, createadmindate_company_db, updateadmin_company_db, updateadmindate_company_db                                         string
+		)
+
+		err = row.Scan(&company_idadmin_db, &companyrule_adminrule_db, &idcompany_db, &tipeadmincompany_db,
+			&company_username_db, &company_ipaddress_db, &company_lastloginadmin_db, &company_name_db,
+			&company_phone1_db, &company_phone2_db, &company_status_db,
+			&createadmin_company_db, &createadmindate_company_db, &updateadmin_company_db, &updateadmindate_company_db)
+
+		helpers.ErrorCheck(err)
+		create := ""
+		update := ""
+		status_css := configs.STATUS_CANCEL
+		if createadmin_company_db != "" {
+			create = createadmin_company_db + ", " + createadmindate_company_db
+		}
+		if updateadmin_company_db != "" {
+			update = updateadmin_company_db + ", " + updateadmindate_company_db
+		}
+		if company_status_db == "Y" {
+			status_css = configs.STATUS_COMPLETE
+		}
+		if company_lastloginadmin_db == createadmindate_company_db {
+			company_lastloginadmin_db = ""
+		}
+		obj.Companyadmin_id = company_idadmin_db
+		obj.Companyadmin_idrule = companyrule_adminrule_db
+		obj.Companyadmin_idcompany = idcompany_db
+		obj.Companyadmin_tipe = tipeadmincompany_db
+		obj.Companyadmin_nmrule = _Get_infoadminrule(idcompany_db, companyrule_adminrule_db)
+		obj.Companyadmin_username = company_username_db
+		obj.Companyadmin_ipaddress = company_ipaddress_db
+		obj.Companyadmin_lastlogin = company_lastloginadmin_db
+		obj.Companyadmin_name = company_name_db
+		obj.Companyadmin_phone1 = company_phone1_db
+		obj.Companyadmin_phone2 = company_phone2_db
+		obj.Companyadmin_status = company_status_db
+		obj.Companyadmin_status_css = status_css
+		obj.Companyadmin_create = create
+		obj.Companyadmin_update = update
+		arraobj = append(arraobj, obj)
+		msg = "Success"
+	}
+
+	defer row.Close()
+
+	res.Status = fiber.StatusOK
+	res.Message = msg
+	res.Record = arraobj
+	res.Time = time.Since(start).String()
+
+	return res, nil
+}
 func Fetch_companyListBet(idcompany string) (helpers.Response, error) {
 	var obj entities.Model_company_listbet
 	var arraobj []entities.Model_company_listbet
@@ -400,12 +479,13 @@ func Fetch_companyConfPoint(idbet int, idcompany string) (helpers.Response, erro
 	_, tbl_mst_config := Get_mappingdatabase(idcompany)
 
 	sql_select := `SELECT 
-			idconf_conf, idbet_listbet, idpoin, poin_conf,  
-			create_conf, to_char(COALESCE(createdate_conf,now()), 'YYYY-MM-DD HH24:MI:SS'), 
-			update_conf, to_char(COALESCE(updatedate_conf,now()), 'YYYY-MM-DD HH24:MI:SS') 
-			FROM ` + tbl_mst_config + `   
-			WHERE idbet_listbet=$1 
-			ORDER BY createdate_conf DESC   `
+			A.idconf_conf, A.idbet_listbet, A.idpoin, A.poin_conf,  
+			A.create_conf, to_char(COALESCE(A.createdate_conf,now()), 'YYYY-MM-DD HH24:MI:SS'), 
+			A.update_conf, to_char(COALESCE(A.updatedate_conf,now()), 'YYYY-MM-DD HH24:MI:SS') 
+			FROM ` + tbl_mst_config + ` as A   
+			JOIN ` + configs.DB_tbl_mst_listpoint + ` as B ON B.idpoin = A.idpoin    
+			WHERE A.idbet_listbet=$1 
+			ORDER BY B.display_listpoint ASC   `
 
 	row, err := con.QueryContext(ctx, sql_select, idbet)
 	helpers.ErrorCheck(err)
@@ -429,7 +509,6 @@ func Fetch_companyConfPoint(idbet int, idcompany string) (helpers.Response, erro
 		}
 		obj.Companyconf_id = idconf_conf_db
 		obj.Companyconf_idbet = idbet_listbet_db
-		obj.Companyconf_idpoin = idpoin_db
 		obj.Companyconf_nmpoin = _Get_infomasterpoint(idpoin_db)
 		obj.Companyconf_poin = poin_conf_db
 		obj.Companyconf_create = create
