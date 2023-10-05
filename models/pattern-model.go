@@ -191,7 +191,7 @@ func _Get_infomasterpointByCode(code string) int {
 	ctx := context.Background()
 	idpoin := 0
 	sql_select := `SELECT
-			COUNTidpoin    
+			idpoin    
 			FROM ` + configs.DB_tbl_mst_listpoint + `  
 			WHERE codepoin='` + code + `'     
 		`
