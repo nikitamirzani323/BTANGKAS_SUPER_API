@@ -20,16 +20,18 @@ import (
 
 const database_pattern_local = configs.DB_tbl_trx_pattern
 
-func Fetch_patternHome(search string, page int) (helpers.Responsepaging, error) {
+func Fetch_patternHome(search string, page int) (helpers.Responsepattern, error) {
 	var obj entities.Model_pattern
 	var arraobj []entities.Model_pattern
-	var res helpers.Responsepaging
+	var res helpers.Responsepattern
 	msg := "Data Not Found"
 	con := db.CreateCon()
 	ctx := context.Background()
 	start := time.Now()
 
-	perpage := 250
+	total_lose := _Get_pattern_losewin("N")
+	total_win := _Get_pattern_losewin("Y")
+	perpage := 50
 	totalrecord := 0
 	offset := page
 
@@ -108,6 +110,8 @@ func Fetch_patternHome(search string, page int) (helpers.Responsepaging, error) 
 	res.Record = arraobj
 	res.Perpage = perpage
 	res.Totalrecord = totalrecord
+	res.Totallose = total_lose
+	res.Totalwin = total_win
 	res.Time = time.Since(start).String()
 
 	return res, nil
@@ -187,7 +191,7 @@ func _Get_infomasterpointByCode(code string) int {
 	ctx := context.Background()
 	idpoin := 0
 	sql_select := `SELECT
-			idpoin    
+			COUNTidpoin    
 			FROM ` + configs.DB_tbl_mst_listpoint + `  
 			WHERE codepoin='` + code + `'     
 		`
@@ -201,4 +205,24 @@ func _Get_infomasterpointByCode(code string) int {
 	}
 
 	return idpoin
+}
+func _Get_pattern_losewin(status string) int {
+	con := db.CreateCon()
+	ctx := context.Background()
+	total := 0
+	sql_select := `SELECT
+			COUNT(idpattern) total 
+			FROM ` + configs.DB_tbl_trx_pattern + `  
+			WHERE status_pattern='` + status + `'     
+		`
+
+	row := con.QueryRowContext(ctx, sql_select)
+	switch e := row.Scan(&total); e {
+	case sql.ErrNoRows:
+	case nil:
+	default:
+		helpers.ErrorCheck(e)
+	}
+
+	return total
 }

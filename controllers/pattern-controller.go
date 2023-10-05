@@ -56,6 +56,8 @@ func Patternhome(c *fiber.Ctx) error {
 	resultredis, flag := helpers.GetRedis(Fieldpattern_home_redis)
 	jsonredis := []byte(resultredis)
 	perpage_RD, _ := jsonparser.GetInt(jsonredis, "perpage")
+	totalwin_RD, _ := jsonparser.GetInt(jsonredis, "totalwin")
+	totallose_RD, _ := jsonparser.GetInt(jsonredis, "totallose")
 	totalrecord_RD, _ := jsonparser.GetInt(jsonredis, "totalrecord")
 	record_RD, _, _, _ := jsonparser.Get(jsonredis, "record")
 	jsonparser.ArrayEach(record_RD, func(value []byte, dataType jsonparser.ValueType, offset int, err error) {
@@ -103,6 +105,8 @@ func Patternhome(c *fiber.Ctx) error {
 			"record":      arraobj,
 			"perpage":     perpage_RD,
 			"totalrecord": totalrecord_RD,
+			"totalwin":    totalwin_RD,
+			"totallose":   totallose_RD,
 			"time":        time.Since(render_page).String(),
 		})
 	}
