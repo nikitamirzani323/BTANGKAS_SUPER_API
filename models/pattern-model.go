@@ -20,7 +20,7 @@ import (
 
 const database_pattern_local = configs.DB_tbl_trx_pattern
 
-func Fetch_patternHome(search string, page int) (helpers.Responsepattern, error) {
+func Fetch_patternHome(search, status string, page int) (helpers.Responsepattern, error) {
 	var obj entities.Model_pattern
 	var arraobj []entities.Model_pattern
 	var res helpers.Responsepattern
@@ -41,7 +41,10 @@ func Fetch_patternHome(search string, page int) (helpers.Responsepattern, error)
 	sql_selectcount += "COUNT(idpattern) as totalpattern  "
 	sql_selectcount += "FROM " + database_pattern_local + "  "
 	if search != "" {
-		sql_selectcount += "AND LOWER(idpattern) LIKE '%" + strings.ToLower(search) + "%' "
+		sql_selectcount += "WHERE LOWER(idpattern) LIKE '%" + strings.ToLower(search) + "%' "
+	}
+	if status != "" {
+		sql_selectcount += "WHERE status_pattern = '" + status + "' "
 	}
 
 	row_selectcount := con.QueryRowContext(ctx, sql_selectcount)
@@ -55,27 +58,33 @@ func Fetch_patternHome(search string, page int) (helpers.Responsepattern, error)
 	sql_select := ""
 	sql_select += ""
 	sql_select += "SELECT "
-	sql_select += "A.idpattern , A.idcard, B.nmpoin, A.resultcardwin, A.status_pattern, "
+	sql_select += "A.idpattern , A.idcard, COALESCE(B.codepoin,'') as codepoin, COALESCE(B.nmpoin,'') as nmpoin , A.resultcardwin, A.status_pattern, "
 	sql_select += "create_pattern, to_char(COALESCE(A.createdate_pattern,now()), 'YYYY-MM-DD HH24:MI:SS'), "
 	sql_select += "update_pattern, to_char(COALESCE(A.updatedate_pattern,now()), 'YYYY-MM-DD HH24:MI:SS') "
 	sql_select += "FROM " + database_pattern_local + " as A  "
-	sql_select += "JOIN " + configs.DB_tbl_mst_listpoint + " as B ON B.idpoin = A.idpoin  "
+	sql_select += "LEFT JOIN " + configs.DB_tbl_mst_listpoint + " as B ON B.idpoin = A.idpoin  "
 	if search == "" {
-		sql_select += "ORDER BY A.createdate_pattern DESC  OFFSET " + strconv.Itoa(offset) + " LIMIT " + strconv.Itoa(perpage)
+		if status != "" {
+			sql_select += "WHERE status_pattern = '" + status + "' "
+			sql_select += "ORDER BY A.createdate_pattern DESC  LIMIT " + strconv.Itoa(perpage)
+		} else {
+			sql_select += "ORDER BY A.createdate_pattern DESC  OFFSET " + strconv.Itoa(offset) + " LIMIT " + strconv.Itoa(perpage)
+		}
+
 	} else {
 		sql_select += "WHERE LOWER(A.idpattern) LIKE '%" + strings.ToLower(search) + "%' "
 		sql_select += "ORDER BY A.createdate_pattern DESC  LIMIT " + strconv.Itoa(perpage)
 	}
-
+	log.Println(sql_select)
 	row, err := con.QueryContext(ctx, sql_select)
 	helpers.ErrorCheck(err)
 	for row.Next() {
 		var (
-			idpattern_db, idcard_db, nmpoin_db, resultcardwin_db, status_pattern_db            string
-			create_pattern_db, createdate_pattern_db, update_pattern_db, updatedate_pattern_db string
+			idpattern_db, idcard_db, codepoin_db, nmpoin_db, resultcardwin_db, status_pattern_db string
+			create_pattern_db, createdate_pattern_db, update_pattern_db, updatedate_pattern_db   string
 		)
 
-		err = row.Scan(&idpattern_db, &idcard_db, &nmpoin_db, &resultcardwin_db, &status_pattern_db,
+		err = row.Scan(&idpattern_db, &idcard_db, &codepoin_db, &nmpoin_db, &resultcardwin_db, &status_pattern_db,
 			&create_pattern_db, &createdate_pattern_db, &update_pattern_db, &updatedate_pattern_db)
 
 		helpers.ErrorCheck(err)
@@ -93,6 +102,7 @@ func Fetch_patternHome(search string, page int) (helpers.Responsepattern, error)
 		}
 		obj.Pattern_id = idpattern_db
 		obj.Pattern_idcard = idcard_db
+		obj.Pattern_codepoin = codepoin_db
 		obj.Pattern_nmpoin = nmpoin_db
 		obj.Pattern_resultcardwin = resultcardwin_db
 		obj.Pattern_status = status_pattern_db
@@ -115,7 +125,7 @@ func Fetch_patternHome(search string, page int) (helpers.Responsepattern, error)
 
 	return res, nil
 }
-func Save_pattern(admin, listpattern, resultcardwin, idrecord, sData string) (helpers.Response, error) {
+func Save_pattern(admin, listpattern, resultcardwin, codepoin, status, idrecord, sData string) (helpers.Response, error) {
 	var res helpers.Response
 	msg := "Failed"
 	tglnow, _ := goment.New()
@@ -159,22 +169,68 @@ func Save_pattern(admin, listpattern, resultcardwin, idrecord, sData string) (he
 			}
 		})
 	} else {
+		point := 0
+		if codepoin != "" {
+			point = _Get_infomasterpointByCode(codepoin)
+		}
 		sql_update := `
 				UPDATE 
 				` + database_pattern_local + `  
-				SET resultcardwin=$1, 
-				update_pattern=$2, updatedate_pattern=$3       
-				WHERE idpattern=$4     
+				SET resultcardwin=$1, idpoin=$2, status_pattern=$3,  
+				update_pattern=$4, updatedate_pattern=$5        
+				WHERE idpattern=$6      
 			`
 
 		flag_update, msg_update := Exec_SQL(sql_update, database_listbet_local, "UPDATE",
-			resultcardwin,
+			resultcardwin, point, status,
 			admin, tglnow.Format("YYYY-MM-DD HH:mm:ss"), idrecord)
 
 		if flag_update {
 			msg = "Succes"
 		} else {
 			fmt.Println(msg_update)
+		}
+	}
+
+	res.Status = fiber.StatusOK
+	res.Message = msg
+	res.Record = nil
+	res.Time = time.Since(render_page).String()
+
+	return res, nil
+}
+func Save_patternmanual(admin, idpattern, idcard, codepoin, resultwin, status, sData string) (helpers.Response, error) {
+	var res helpers.Response
+	msg := "Failed"
+	tglnow, _ := goment.New()
+	render_page := time.Now()
+	flag := false
+
+	if sData == "New" {
+		flag = CheckDB(database_pattern_local, "idpattern", idpattern)
+		if !flag {
+			sql_insert := `
+					insert into
+					` + database_pattern_local + ` (
+						idpattern ,idcard, idpoin, status_pattern,  resultcardwin, 
+						create_pattern, createdate_pattern 
+					) values (
+						$1, $2, $3, $4, $5,     
+						$6, $7  
+					)
+				`
+
+			flag_insert, msg_insert := Exec_SQL(sql_insert, database_pattern_local, "INSERT",
+				idpattern, idcard, _Get_infomasterpointByCode(codepoin), status, resultwin,
+				admin, tglnow.Format("YYYY-MM-DD HH:mm:ss"))
+
+			if flag_insert {
+				msg = "Succes"
+			} else {
+				fmt.Println(msg_insert)
+			}
+		} else {
+			msg = "Duplicate Entry"
 		}
 	}
 

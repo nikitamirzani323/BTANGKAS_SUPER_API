@@ -3,6 +3,7 @@ package entities
 type Model_pattern struct {
 	Pattern_id            string `json:"pattern_id"`
 	Pattern_idcard        string `json:"pattern_idcard"`
+	Pattern_codepoin      string `json:"pattern_codepoin"`
 	Pattern_nmpoin        string `json:"pattern_nmpoin"`
 	Pattern_resultcardwin string `json:"pattern_resultcardwin"`
 	Pattern_status        string `json:"pattern_status"`
@@ -12,15 +13,31 @@ type Model_pattern struct {
 }
 
 type Controller_pattern struct {
-	Pattern_search string `json:"pattern_search"`
-	Pattern_page   int    `json:"pattern_page"`
+	Pattern_search        string `json:"pattern_search"`
+	Pattern_search_status string `json:"pattern_search_status"`
+	Pattern_page          int    `json:"pattern_page"`
 }
 type Controller_patternsave struct {
 	Page                  string `json:"page" validate:"required"`
 	Sdata                 string `json:"sdata" validate:"required"`
 	Pattern_search        string `json:"pattern_search"`
+	Pattern_search_status string `json:"pattern_search_status"`
 	Pattern_page          int    `json:"pattern_page"`
 	Pattern_id            string `json:"pattern_id"`
+	Pattern_codepoin      string `json:"pattern_codepoin"`
+	Pattern_status        string `json:"pattern_status"`
 	Pattern_resultcardwin string `json:"pattern_resultcardwin"`
 	Pattern_List          string `json:"pattern_list" `
+}
+type Controller_patternsavemanual struct {
+	Page                  string `json:"page" validate:"required"`
+	Sdata                 string `json:"sdata" validate:"required"`
+	Pattern_search        string `json:"pattern_search"`
+	Pattern_search_status string `json:"pattern_search_status"`
+	Pattern_page          int    `json:"pattern_page"`
+	Pattern_id            string `json:"pattern_id"`
+	Pattern_idcard        string `json:"pattern_idcard"`
+	Pattern_codepoin      string `json:"pattern_codepoin"`
+	Pattern_resultcardwin string `json:"pattern_resultcardwin"`
+	Pattern_status        string `json:"pattern_status"`
 }
