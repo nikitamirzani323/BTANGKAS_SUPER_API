@@ -63,7 +63,6 @@ func Patternhome(c *fiber.Ctx) error {
 	jsonparser.ArrayEach(record_RD, func(value []byte, dataType jsonparser.ValueType, offset int, err error) {
 		pattern_id, _ := jsonparser.GetString(value, "pattern_id")
 		pattern_idcard, _ := jsonparser.GetString(value, "pattern_idcard")
-		pattern_idpoin, _ := jsonparser.GetInt(value, "pattern_idpoin")
 		pattern_nmpoin, _ := jsonparser.GetString(value, "pattern_nmpoin")
 		pattern_resultcardwin, _ := jsonparser.GetString(value, "pattern_resultcardwin")
 		pattern_status, _ := jsonparser.GetString(value, "pattern_status")
@@ -73,7 +72,6 @@ func Patternhome(c *fiber.Ctx) error {
 
 		obj.Pattern_id = pattern_id
 		obj.Pattern_idcard = pattern_idcard
-		obj.Pattern_idpoin = int(pattern_idpoin)
 		obj.Pattern_nmpoin = pattern_nmpoin
 		obj.Pattern_resultcardwin = pattern_resultcardwin
 		obj.Pattern_status = pattern_status

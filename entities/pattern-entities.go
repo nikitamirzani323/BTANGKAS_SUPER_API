@@ -3,7 +3,6 @@ package entities
 type Model_pattern struct {
 	Pattern_id            string `json:"pattern_id"`
 	Pattern_idcard        string `json:"pattern_idcard"`
-	Pattern_idpoin        int    `json:"pattern_idpoin"`
 	Pattern_nmpoin        string `json:"pattern_nmpoin"`
 	Pattern_resultcardwin string `json:"pattern_resultcardwin"`
 	Pattern_status        string `json:"pattern_status"`

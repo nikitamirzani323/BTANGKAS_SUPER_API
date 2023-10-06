@@ -31,7 +31,7 @@ func Fetch_patternHome(search string, page int) (helpers.Responsepattern, error)
 
 	total_lose := _Get_pattern_losewin("N")
 	total_win := _Get_pattern_losewin("Y")
-	perpage := 50
+	perpage := 25
 	totalrecord := 0
 	offset := page
 
@@ -55,27 +55,27 @@ func Fetch_patternHome(search string, page int) (helpers.Responsepattern, error)
 	sql_select := ""
 	sql_select += ""
 	sql_select += "SELECT "
-	sql_select += "idpattern , idcard, idpoin, resultcardwin, status_pattern, "
-	sql_select += "create_pattern, to_char(COALESCE(createdate_pattern,now()), 'YYYY-MM-DD HH24:MI:SS'), "
-	sql_select += "update_pattern, to_char(COALESCE(updatedate_pattern,now()), 'YYYY-MM-DD HH24:MI:SS') "
-	sql_select += "FROM " + database_pattern_local + "  "
+	sql_select += "A.idpattern , A.idcard, B.nmpoin, A.resultcardwin, A.status_pattern, "
+	sql_select += "create_pattern, to_char(COALESCE(A.createdate_pattern,now()), 'YYYY-MM-DD HH24:MI:SS'), "
+	sql_select += "update_pattern, to_char(COALESCE(A.updatedate_pattern,now()), 'YYYY-MM-DD HH24:MI:SS') "
+	sql_select += "FROM " + database_pattern_local + " as A  "
+	sql_select += "JOIN " + configs.DB_tbl_mst_listpoint + " as B ON B.idpoin = A.idpoin  "
 	if search == "" {
-		sql_select += "ORDER BY createdate_pattern DESC  OFFSET " + strconv.Itoa(offset) + " LIMIT " + strconv.Itoa(perpage)
+		sql_select += "ORDER BY A.createdate_pattern DESC  OFFSET " + strconv.Itoa(offset) + " LIMIT " + strconv.Itoa(perpage)
 	} else {
-		sql_select += "WHERE LOWER(idpattern) LIKE '%" + strings.ToLower(search) + "%' "
-		sql_select += "ORDER BY createdate_pattern DESC  LIMIT " + strconv.Itoa(perpage)
+		sql_select += "WHERE LOWER(A.idpattern) LIKE '%" + strings.ToLower(search) + "%' "
+		sql_select += "ORDER BY A.createdate_pattern DESC  LIMIT " + strconv.Itoa(perpage)
 	}
 
 	row, err := con.QueryContext(ctx, sql_select)
 	helpers.ErrorCheck(err)
 	for row.Next() {
 		var (
-			idpoin_db                                                                          int
-			idpattern_db, idcard_db, resultcardwin_db, status_pattern_db                       string
+			idpattern_db, idcard_db, nmpoin_db, resultcardwin_db, status_pattern_db            string
 			create_pattern_db, createdate_pattern_db, update_pattern_db, updatedate_pattern_db string
 		)
 
-		err = row.Scan(&idpattern_db, &idcard_db, &idpoin_db, &resultcardwin_db, &status_pattern_db,
+		err = row.Scan(&idpattern_db, &idcard_db, &nmpoin_db, &resultcardwin_db, &status_pattern_db,
 			&create_pattern_db, &createdate_pattern_db, &update_pattern_db, &updatedate_pattern_db)
 
 		helpers.ErrorCheck(err)
@@ -93,8 +93,7 @@ func Fetch_patternHome(search string, page int) (helpers.Responsepattern, error)
 		}
 		obj.Pattern_id = idpattern_db
 		obj.Pattern_idcard = idcard_db
-		obj.Pattern_idpoin = idpoin_db
-		obj.Pattern_nmpoin = _Get_infomasterpoint(idpoin_db)
+		obj.Pattern_nmpoin = nmpoin_db
 		obj.Pattern_resultcardwin = resultcardwin_db
 		obj.Pattern_status = status_pattern_db
 		obj.Pattern_status_css = status_css
