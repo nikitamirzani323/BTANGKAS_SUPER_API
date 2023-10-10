@@ -11,6 +11,12 @@ type Model_pattern struct {
 	Pattern_create        string `json:"pattern_create"`
 	Pattern_update        string `json:"pattern_update"`
 }
+type Model_patternlistpoint struct {
+	Patternlistpoint_id       int    `json:"patternlistpoint_id"`
+	Patternlistpoint_codepoin string `json:"patternlistpoint_codepoin"`
+	Patternlistpoint_nmpoin   string `json:"patternlistpoint_nmpoin"`
+	Patternlistpoint_total    int    `json:"patternlistpoint_total"`
+}
 
 type Controller_pattern struct {
 	Pattern_search        string `json:"pattern_search"`

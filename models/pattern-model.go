@@ -23,6 +23,8 @@ const database_pattern_local = configs.DB_tbl_trx_pattern
 func Fetch_patternHome(search, status string, page int) (helpers.Responsepattern, error) {
 	var obj entities.Model_pattern
 	var arraobj []entities.Model_pattern
+	var objlistpoint entities.Model_patternlistpoint
+	var arraobjlistpoint []entities.Model_patternlistpoint
 	var res helpers.Responsepattern
 	msg := "Data Not Found"
 	con := db.CreateCon()
@@ -54,6 +56,32 @@ func Fetch_patternHome(search, status string, page int) (helpers.Responsepattern
 	default:
 		helpers.ErrorCheck(e_selectcount)
 	}
+
+	sql_selectlistpoint := `SELECT 
+			idpoin ,  codepoin, nmpoin  
+			FROM ` + configs.DB_tbl_mst_listpoint + `  
+			ORDER BY display_listpoint ASC   `
+
+	row_selectlistpoint, err_selectlistpoint := con.QueryContext(ctx, sql_selectlistpoint)
+	helpers.ErrorCheck(err_selectlistpoint)
+	for row_selectlistpoint.Next() {
+		var (
+			idpoin_db              int
+			codepoin_db, nmpoin_db string
+		)
+
+		err_selectlistpoint = row_selectlistpoint.Scan(&idpoin_db, &codepoin_db, &nmpoin_db)
+
+		helpers.ErrorCheck(err_selectlistpoint)
+
+		objlistpoint.Patternlistpoint_id = idpoin_db
+		objlistpoint.Patternlistpoint_codepoin = codepoin_db
+		objlistpoint.Patternlistpoint_nmpoin = nmpoin_db
+		objlistpoint.Patternlistpoint_total = _Get_pattern_bypoint(idpoin_db)
+		arraobjlistpoint = append(arraobjlistpoint, objlistpoint)
+		msg = "Success"
+	}
+	defer row_selectlistpoint.Close()
 
 	sql_select := ""
 	sql_select += ""
@@ -121,6 +149,7 @@ func Fetch_patternHome(search, status string, page int) (helpers.Responsepattern
 	res.Totalrecord = totalrecord
 	res.Totallose = total_lose
 	res.Totalwin = total_win
+	res.Listpoint = arraobjlistpoint
 	res.Time = time.Since(start).String()
 
 	return res, nil
@@ -269,6 +298,26 @@ func _Get_pattern_losewin(status string) int {
 			COUNT(idpattern) total 
 			FROM ` + configs.DB_tbl_trx_pattern + `  
 			WHERE status_pattern='` + status + `'     
+		`
+
+	row := con.QueryRowContext(ctx, sql_select)
+	switch e := row.Scan(&total); e {
+	case sql.ErrNoRows:
+	case nil:
+	default:
+		helpers.ErrorCheck(e)
+	}
+
+	return total
+}
+func _Get_pattern_bypoint(idpoin int) int {
+	con := db.CreateCon()
+	ctx := context.Background()
+	total := 0
+	sql_select := `SELECT 
+			COUNT(idpattern) total 
+			FROM ` + configs.DB_tbl_trx_pattern + `  
+			WHERE idpoin='` + strconv.Itoa(idpoin) + `'     
 		`
 
 	row := con.QueryRowContext(ctx, sql_select)

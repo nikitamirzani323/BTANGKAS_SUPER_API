@@ -22,6 +22,7 @@ type Responsepattern struct {
 	Totalrecord int         `json:"totalrecord"`
 	Totalwin    int         `json:"totalwin"`
 	Totallose   int         `json:"totallose"`
+	Listpoint   interface{} `json:"listpoint"`
 	Time        string      `json:"time"`
 }
 type Responsecompany struct {

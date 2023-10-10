@@ -52,6 +52,8 @@ func Patternhome(c *fiber.Ctx) error {
 	}
 	var obj entities.Model_pattern
 	var arraobj []entities.Model_pattern
+	var objlistpoint entities.Model_patternlistpoint
+	var arraobjlistpoint []entities.Model_patternlistpoint
 	render_page := time.Now()
 	resultredis, flag := helpers.GetRedis(Fieldpattern_home_redis)
 	jsonredis := []byte(resultredis)
@@ -60,6 +62,7 @@ func Patternhome(c *fiber.Ctx) error {
 	totallose_RD, _ := jsonparser.GetInt(jsonredis, "totallose")
 	totalrecord_RD, _ := jsonparser.GetInt(jsonredis, "totalrecord")
 	record_RD, _, _, _ := jsonparser.Get(jsonredis, "record")
+	listpoint_RD, _, _, _ := jsonparser.Get(jsonredis, "listpoint")
 	jsonparser.ArrayEach(record_RD, func(value []byte, dataType jsonparser.ValueType, offset int, err error) {
 		pattern_id, _ := jsonparser.GetString(value, "pattern_id")
 		pattern_idcard, _ := jsonparser.GetString(value, "pattern_idcard")
@@ -82,7 +85,18 @@ func Patternhome(c *fiber.Ctx) error {
 		obj.Pattern_update = pattern_update
 		arraobj = append(arraobj, obj)
 	})
+	jsonparser.ArrayEach(listpoint_RD, func(value []byte, dataType jsonparser.ValueType, offset int, err error) {
+		patternlistpoint_id, _ := jsonparser.GetInt(value, "patternlistpoint_id")
+		patternlistpoint_codepoin, _ := jsonparser.GetString(value, "patternlistpoint_codepoin")
+		patternlistpoint_nmpoin, _ := jsonparser.GetString(value, "patternlistpoint_nmpoin")
+		patternlistpoint_total, _ := jsonparser.GetInt(value, "patternlistpoint_total")
 
+		objlistpoint.Patternlistpoint_id = int(patternlistpoint_id)
+		objlistpoint.Patternlistpoint_codepoin = patternlistpoint_codepoin
+		objlistpoint.Patternlistpoint_nmpoin = patternlistpoint_nmpoin
+		objlistpoint.Patternlistpoint_total = int(patternlistpoint_total)
+		arraobjlistpoint = append(arraobjlistpoint, objlistpoint)
+	})
 	if !flag {
 		//search string, page int
 		result, err := models.Fetch_patternHome(client.Pattern_search, client.Pattern_search_status, client.Pattern_page)
@@ -107,6 +121,7 @@ func Patternhome(c *fiber.Ctx) error {
 			"totalrecord": totalrecord_RD,
 			"totalwin":    totalwin_RD,
 			"totallose":   totallose_RD,
+			"listpoint":   arraobjlistpoint,
 			"time":        time.Since(render_page).String(),
 		})
 	}
