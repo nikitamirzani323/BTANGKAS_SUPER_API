@@ -39,7 +39,6 @@ type Controller_listpatternsave struct {
 type Controller_listpatterndetailsave struct {
 	Page                            string `json:"page" validate:"required"`
 	Sdata                           string `json:"sdata" validate:"required"`
-	Listpatterndetail_id            string `json:"listpatterndetail_id"`
 	Listpatterndetail_idlistpattern string `json:"listpatterndetail_idlistpattern" validate:"required"`
 	Listpatterndetail_idpattern     string `json:"listpatterndetail_idpattern" validate:"required"`
 }

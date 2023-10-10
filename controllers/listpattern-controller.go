@@ -14,8 +14,8 @@ import (
 	"github.com/nikitamirzani323/BTANGKAS_SUPER_API/models"
 )
 
-const Fieldlistpattern_home_redis = "LISTPATTERN_BACKEND"
-const Fieldlistpatterndetail_home_redis = "LISTPATTERNDETAIL_BACKEND"
+const Fieldlistpattern_home_redis = "LISTPATTERNGAME_BACKEND"
+const Fieldlistpatterndetail_home_redis = "LISTPATTERNGAMEDETAIL_BACKEND"
 const Fieldlistpattern_home_client_redis = "LISTPATTERN_FRONTEND"
 
 func Listpatternhome(c *fiber.Ctx) error {
@@ -217,7 +217,7 @@ func ListpatternSave(c *fiber.Ctx) error {
 	// admin, name, status, idrecord, sData string
 	result, err := models.Save_listpattern(
 		client_admin,
-		client.Listpattern_nmlistpattern, client.Listpattern_status, client.Sdata, client.Listpattern_id)
+		client.Listpattern_nmlistpattern, client.Listpattern_status, client.Listpattern_id, client.Sdata)
 	if err != nil {
 		c.Status(fiber.StatusBadRequest)
 		return c.JSON(fiber.Map{
@@ -264,10 +264,10 @@ func ListpatterndetailSave(c *fiber.Ctx) error {
 	temp_decp := helpers.Decryption(name)
 	client_admin, _ := helpers.Parsing_Decry(temp_decp, "==")
 
-	// admin, idlistpattern, idpattern, idrecord, sData string
+	// admin, idlistpattern, idpattern, sData string
 	result, err := models.Save_listpatterndetail(
 		client_admin,
-		client.Listpatterndetail_idlistpattern, client.Listpatterndetail_idpattern, client.Sdata, client.Listpatterndetail_id)
+		client.Listpatterndetail_idlistpattern, client.Listpatterndetail_idpattern, client.Sdata)
 	if err != nil {
 		c.Status(fiber.StatusBadRequest)
 		return c.JSON(fiber.Map{
@@ -282,8 +282,8 @@ func ListpatterndetailSave(c *fiber.Ctx) error {
 }
 func _deleteredis_listpattern(idlistpattern, search, status string, page int) {
 	val_master := helpers.DeleteRedis(Fieldlistpattern_home_redis + "_" + strconv.Itoa(page) + "_" + search + "_" + status)
-	fmt.Printf("Redis Delete BACKEND LISTPATTERN : %d", val_master)
+	fmt.Printf("Redis Delete BACKEND LISTPATTERN : %d\n", val_master)
 
 	val_masterdetail := helpers.DeleteRedis(Fieldlistpatterndetail_home_redis + "_" + idlistpattern)
-	fmt.Printf("Redis Delete BACKEND LISTPATTERNDETAIL : %d", val_masterdetail)
+	fmt.Printf("Redis Delete BACKEND LISTPATTERNDETAIL : %d\n", val_masterdetail)
 }

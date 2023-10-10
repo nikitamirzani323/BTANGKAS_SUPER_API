@@ -17,7 +17,7 @@ import (
 	"github.com/nleeper/goment"
 )
 
-const database_listpattern_local = configs.DB_tbl_trx_pattern
+const database_listpattern_local = configs.DB_tbl_trx_listpattern
 const database_listpatterndetail_local = configs.DB_tbl_trx_listpatterndetail
 
 func Fetch_listpatternHome(search, status string, page int) (helpers.Responsepaging, error) {
@@ -234,7 +234,7 @@ func Save_listpattern(admin, name, status, idrecord, sData string) (helpers.Resp
 
 	return res, nil
 }
-func Save_listpatterndetail(admin, idlistpattern, idpattern, idrecord, sData string) (helpers.Response, error) {
+func Save_listpatterndetail(admin, idlistpattern, idpattern, sData string) (helpers.Response, error) {
 	var res helpers.Response
 	msg := "Failed"
 	tglnow, _ := goment.New()
