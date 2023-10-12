@@ -23,6 +23,10 @@ type Controller_pattern struct {
 	Pattern_search_status string `json:"pattern_search_status"`
 	Pattern_page          int    `json:"pattern_page"`
 }
+type Controller_patternbycode struct {
+	Pattern_code string `json:"pattern_code"`
+	Pattern_page int    `json:"pattern_page"`
+}
 type Controller_patternsave struct {
 	Page                  string `json:"page" validate:"required"`
 	Sdata                 string `json:"sdata" validate:"required"`

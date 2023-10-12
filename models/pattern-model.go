@@ -36,7 +36,6 @@ func Fetch_patternHome(search, status string, page int) (helpers.Responsepattern
 	perpage := 25
 	totalrecord := 0
 	offset := page
-
 	sql_selectcount := ""
 	sql_selectcount += ""
 	sql_selectcount += "SELECT "
@@ -154,6 +153,93 @@ func Fetch_patternHome(search, status string, page int) (helpers.Responsepattern
 
 	return res, nil
 }
+func Fetch_patternByPoin(code string, page int) (helpers.Responsepaging, error) {
+	var obj entities.Model_pattern
+	var arraobj []entities.Model_pattern
+	var res helpers.Responsepaging
+	msg := "Data Not Found"
+	con := db.CreateCon()
+	ctx := context.Background()
+	start := time.Now()
+
+	perpage := 25
+	totalrecord := 0
+	offset := page
+	idpoin := _Get_infomasterpointByCode(code)
+
+	sql_selectcount := ""
+	sql_selectcount += ""
+	sql_selectcount += "SELECT "
+	sql_selectcount += "COUNT(idpattern) as totalpattern  "
+	sql_selectcount += "FROM " + database_pattern_local + "  "
+	sql_selectcount += "WHERE idpoin = '" + strconv.Itoa(idpoin) + "' "
+
+	row_selectcount := con.QueryRowContext(ctx, sql_selectcount)
+	switch e_selectcount := row_selectcount.Scan(&totalrecord); e_selectcount {
+	case sql.ErrNoRows:
+	case nil:
+	default:
+		helpers.ErrorCheck(e_selectcount)
+	}
+
+	sql_select := ""
+	sql_select += ""
+	sql_select += "SELECT "
+	sql_select += "A.idpattern , A.idcard, COALESCE(B.codepoin,'') as codepoin, COALESCE(B.nmpoin,'') as nmpoin , A.resultcardwin, A.status_pattern, "
+	sql_select += "create_pattern, to_char(COALESCE(A.createdate_pattern,now()), 'YYYY-MM-DD HH24:MI:SS'), "
+	sql_select += "update_pattern, to_char(COALESCE(A.updatedate_pattern,now()), 'YYYY-MM-DD HH24:MI:SS') "
+	sql_select += "FROM " + database_pattern_local + " as A  "
+	sql_select += "LEFT JOIN " + configs.DB_tbl_mst_listpoint + " as B ON B.idpoin = A.idpoin  "
+	sql_select += "WHERE A.idpoin = '" + strconv.Itoa(idpoin) + "' "
+	sql_select += "ORDER BY A.createdate_pattern DESC  OFFSET " + strconv.Itoa(offset) + " LIMIT " + strconv.Itoa(perpage)
+
+	row, err := con.QueryContext(ctx, sql_select)
+	helpers.ErrorCheck(err)
+	for row.Next() {
+		var (
+			idpattern_db, idcard_db, codepoin_db, nmpoin_db, resultcardwin_db, status_pattern_db string
+			create_pattern_db, createdate_pattern_db, update_pattern_db, updatedate_pattern_db   string
+		)
+
+		err = row.Scan(&idpattern_db, &idcard_db, &codepoin_db, &nmpoin_db, &resultcardwin_db, &status_pattern_db,
+			&create_pattern_db, &createdate_pattern_db, &update_pattern_db, &updatedate_pattern_db)
+
+		helpers.ErrorCheck(err)
+		create := ""
+		update := ""
+		status_css := configs.STATUS_CANCEL
+		if create_pattern_db != "" {
+			create = create_pattern_db + ", " + createdate_pattern_db
+		}
+		if update_pattern_db != "" {
+			update = update_pattern_db + ", " + updatedate_pattern_db
+		}
+		if status_pattern_db == "Y" {
+			status_css = configs.STATUS_RUNNING
+		}
+		obj.Pattern_id = idpattern_db
+		obj.Pattern_idcard = idcard_db
+		obj.Pattern_codepoin = codepoin_db
+		obj.Pattern_nmpoin = nmpoin_db
+		obj.Pattern_resultcardwin = resultcardwin_db
+		obj.Pattern_status = status_pattern_db
+		obj.Pattern_status_css = status_css
+		obj.Pattern_create = create
+		obj.Pattern_update = update
+		arraobj = append(arraobj, obj)
+		msg = "Success"
+	}
+	defer row.Close()
+
+	res.Status = fiber.StatusOK
+	res.Message = msg
+	res.Record = arraobj
+	res.Perpage = perpage
+	res.Totalrecord = totalrecord
+	res.Time = time.Since(start).String()
+
+	return res, nil
+}
 func Save_pattern(admin, listpattern, resultcardwin, codepoin, status, idrecord, sData string) (helpers.Response, error) {
 	var res helpers.Response
 	msg := "Failed"
@@ -259,7 +345,23 @@ func Save_patternmanual(admin, idpattern, idcard, codepoin, resultwin, status, s
 				fmt.Println(msg_insert)
 			}
 		} else {
-			msg = "Duplicate Entry"
+			sql_update := `
+				UPDATE 
+				` + database_pattern_local + `  
+				SET resultcardwin=$1, idpoin=$2, status_pattern=$3,  
+				update_pattern=$4, updatedate_pattern=$5        
+				WHERE idpattern=$6      
+			`
+
+			flag_update, msg_update := Exec_SQL(sql_update, database_listbet_local, "UPDATE",
+				resultwin, _Get_infomasterpointByCode(codepoin), status,
+				admin, tglnow.Format("YYYY-MM-DD HH:mm:ss"), idpattern)
+
+			if flag_update {
+				msg = "Succes"
+			} else {
+				fmt.Println(msg_update)
+			}
 		}
 	}
 
