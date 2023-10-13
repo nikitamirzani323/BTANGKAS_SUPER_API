@@ -73,6 +73,47 @@ func Fetch_listpointHome() (helpers.Response, error) {
 
 	return res, nil
 }
+func Fetch_listpointShareHome() (helpers.Response, error) {
+	var obj entities.Model_listpointshare
+	var arraobj []entities.Model_listpointshare
+	var res helpers.Response
+	msg := "Data Not Found"
+	con := db.CreateCon()
+	ctx := context.Background()
+	start := time.Now()
+
+	sql_select := `SELECT 
+			idpoin , codepoin, nmpoin  
+			FROM ` + database_listpoint_local + `  
+			ORDER BY display_listpoint ASC   `
+
+	row, err := con.QueryContext(ctx, sql_select)
+	helpers.ErrorCheck(err)
+	for row.Next() {
+		var (
+			idpoin_db              int
+			codepoin_db, nmpoin_db string
+		)
+
+		err = row.Scan(&idpoin_db, &codepoin_db, &nmpoin_db)
+
+		helpers.ErrorCheck(err)
+
+		obj.Lispoint_id = idpoin_db
+		obj.Lispoint_code = codepoin_db
+		obj.Lispoint_name = nmpoin_db
+		arraobj = append(arraobj, obj)
+		msg = "Success"
+	}
+	defer row.Close()
+
+	res.Status = fiber.StatusOK
+	res.Message = msg
+	res.Record = arraobj
+	res.Time = time.Since(start).String()
+
+	return res, nil
+}
 func Save_listpoint(admin, code, name, sData string, idrecord, poin, display int) (helpers.Response, error) {
 	var res helpers.Response
 	msg := "Failed"

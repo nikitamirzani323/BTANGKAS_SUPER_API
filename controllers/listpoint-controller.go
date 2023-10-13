@@ -14,6 +14,7 @@ import (
 )
 
 const Fieldlistpoint_home_redis = "LISTPOINT_BACKEND"
+const Fieldlistpointshare_home_redis = "LISTPOINTSHARE_BACKEND"
 const Fieldlistpoint_home_client_redis = "LISTPOINT_FRONTEND"
 
 func Listpointhome(c *fiber.Ctx) error {
@@ -57,6 +58,47 @@ func Listpointhome(c *fiber.Ctx) error {
 		return c.JSON(result)
 	} else {
 		fmt.Println("LISTPOINT CACHE")
+		return c.JSON(fiber.Map{
+			"status":  fiber.StatusOK,
+			"message": "Success",
+			"record":  arraobj,
+			"time":    time.Since(render_page).String(),
+		})
+	}
+}
+func Listpointsharehome(c *fiber.Ctx) error {
+	var obj entities.Model_listpointshare
+	var arraobj []entities.Model_listpointshare
+	render_page := time.Now()
+	resultredis, flag := helpers.GetRedis(Fieldlistpointshare_home_redis)
+	jsonredis := []byte(resultredis)
+	record_RD, _, _, _ := jsonparser.Get(jsonredis, "record")
+	jsonparser.ArrayEach(record_RD, func(value []byte, dataType jsonparser.ValueType, offset int, err error) {
+		lispoint_id, _ := jsonparser.GetInt(value, "lispoint_id")
+		lispoint_code, _ := jsonparser.GetString(value, "lispoint_code")
+		lispoint_name, _ := jsonparser.GetString(value, "lispoint_name")
+
+		obj.Lispoint_id = int(lispoint_id)
+		obj.Lispoint_code = lispoint_code
+		obj.Lispoint_name = lispoint_name
+		arraobj = append(arraobj, obj)
+	})
+
+	if !flag {
+		result, err := models.Fetch_listpointShareHome()
+		if err != nil {
+			c.Status(fiber.StatusBadRequest)
+			return c.JSON(fiber.Map{
+				"status":  fiber.StatusBadRequest,
+				"message": err.Error(),
+				"record":  nil,
+			})
+		}
+		helpers.SetRedis(Fieldlistpointshare_home_redis, result, 60*time.Minute)
+		fmt.Println("LISTPOINT SHARE MYSQL")
+		return c.JSON(result)
+	} else {
+		fmt.Println("LISTPOINT SHARE CACHE")
 		return c.JSON(fiber.Map{
 			"status":  fiber.StatusOK,
 			"message": "Success",
@@ -119,4 +161,6 @@ func _deleteredis_listpoint() {
 	val_master := helpers.DeleteRedis(Fieldlistpoint_home_redis)
 	fmt.Printf("Redis Delete BACKEND LISTPOINT : %d", val_master)
 
+	val_master_share := helpers.DeleteRedis(Fieldlistpointshare_home_redis)
+	fmt.Printf("Redis Delete BACKEND LISTPOINT : %d", val_master_share)
 }

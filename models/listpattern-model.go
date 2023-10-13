@@ -98,6 +98,8 @@ func Fetch_listpatternHome(search, status string, page int) (helpers.Responsepag
 		}
 		obj.Listpattern_id = idlistpattern_db
 		obj.Listpattern_nmlistpattern = nmlistpattern_db
+		obj.Listpattern_totallose = _Get_total_listpatterndetail_losewin(idlistpattern_db, "N")
+		obj.Listpattern_totalwin = _Get_total_listpatterndetail_losewin(idlistpattern_db, "Y")
 		obj.Listpattern_status = status_listpattern_db
 		obj.Listpattern_status_css = status_css
 		obj.Listpattern_create = create
@@ -116,50 +118,59 @@ func Fetch_listpatternHome(search, status string, page int) (helpers.Responsepag
 
 	return res, nil
 }
-func Fetch_listpatterndetailHome(idlistpattern string) (helpers.Response, error) {
+func Fetch_listpatterndetailHome(idlistpattern string) (helpers.Responselistpatterndetail, error) {
 	var obj entities.Model_listpatterndetail
 	var arraobj []entities.Model_listpatterndetail
-	var res helpers.Response
+	var res helpers.Responselistpatterndetail
 	msg := "Data Not Found"
 	con := db.CreateCon()
 	ctx := context.Background()
 	start := time.Now()
 
+	total_lose := _Get_total_listpatterndetail_losewin(idlistpattern, "N")
+	total_win := _Get_total_listpatterndetail_losewin(idlistpattern, "Y")
+
 	sql_select := `SELECT 
-			idlistpatterndetail , idpattern,  
-			create_listpatterndetail, to_char(COALESCE(createdate_listpatterndetail,now()), 'YYYY-MM-DD HH24:MI:SS'), 
-			update_listpatterndetail, to_char(COALESCE(updatedate_listpatterndetail,now()), 'YYYY-MM-DD HH24:MI:SS') 
-			FROM ` + database_listpatterndetail_local + `  
-			WHERE idlistpattern=$1 
-			ORDER BY createdate_listpatterndetail ASC   `
+			A.idlistpatterndetail , A.status_card, A.idpoin, 
+			COALESCE(B.codepoin,'') as codepoin, COALESCE(B.nmpoin,'') as nmpoin, COALESCE(B.poin,0) as poin,   
+			A.create_listpatterndetail, to_char(COALESCE(A.createdate_listpatterndetail,now()), 'YYYY-MM-DD HH24:MI:SS'), 
+			A.update_listpatterndetail, to_char(COALESCE(A.updatedate_listpatterndetail,now()), 'YYYY-MM-DD HH24:MI:SS') 
+			FROM ` + database_listpatterndetail_local + ` as A   
+			LEFT JOIN ` + configs.DB_tbl_mst_listpoint + ` as B ON B.idpoin = A.idpoin    
+			WHERE A.idlistpattern=$1 
+			ORDER BY A.createdate_listpatterndetail ASC   `
 
 	row, err := con.QueryContext(ctx, sql_select, idlistpattern)
 	helpers.ErrorCheck(err)
 	for row.Next() {
 		var (
-			idlistpatterndetail_db                                                                                                     int
-			idpattern_db                                                                                                               string
+			idlistpatterndetail_db, idpoin_db, poin_db                                                                                 int
+			status_card_db, codepoin_db, nmpoin_db                                                                                     string
 			create_listpatterndetail_db, createdate_listpatterndetail_db, update_listpatterndetail_db, updatedate_listpatterndetail_db string
 		)
 
-		err = row.Scan(&idlistpatterndetail_db, &idpattern_db,
+		err = row.Scan(&idlistpatterndetail_db, &status_card_db, &idpoin_db, &codepoin_db, &nmpoin_db, &poin_db,
 			&create_listpatterndetail_db, &createdate_listpatterndetail_db, &update_listpatterndetail_db, &updatedate_listpatterndetail_db)
 
 		helpers.ErrorCheck(err)
 		create := ""
 		update := ""
+		status_css := configs.STATUS_CANCEL
 		if create_listpatterndetail_db != "" {
 			create = create_listpatterndetail_db + ", " + createdate_listpatterndetail_db
 		}
 		if update_listpatterndetail_db != "" {
 			update = update_listpatterndetail_db + ", " + updatedate_listpatterndetail_db
 		}
-
+		if status_card_db == "Y" {
+			status_css = configs.STATUS_RUNNING
+		}
 		obj.Listpatterndetail_id = idlistpatterndetail_db
-		obj.Listpatterndetail_idpattern = idpattern_db
-		obj.Listpatterndetail_nmpoin = ""
-		obj.Listpatterndetail_status = ""
-		obj.Listpatterndetail_status_css = ""
+		obj.Listpatterndetail_idpoin = idpoin_db
+		obj.Listpatterndetail_nmpoin = codepoin_db + "-" + nmpoin_db
+		obj.Listpatterndetail_poin = poin_db
+		obj.Listpatterndetail_status = status_card_db
+		obj.Listpatterndetail_status_css = status_css
 		obj.Listpatterndetail_create = create
 		obj.Listpatterndetail_update = update
 		arraobj = append(arraobj, obj)
@@ -170,6 +181,8 @@ func Fetch_listpatterndetailHome(idlistpattern string) (helpers.Response, error)
 	res.Status = fiber.StatusOK
 	res.Message = msg
 	res.Record = arraobj
+	res.Totallose = total_lose
+	res.Totalwin = total_win
 	res.Time = time.Since(start).String()
 
 	return res, nil
@@ -234,39 +247,33 @@ func Save_listpattern(admin, name, status, idrecord, sData string) (helpers.Resp
 
 	return res, nil
 }
-func Save_listpatterndetail(admin, idlistpattern, idpattern, sData string) (helpers.Response, error) {
+func Save_listpatterndetail(admin, idlistpattern, status, sData string, idpoin int) (helpers.Response, error) {
 	var res helpers.Response
 	msg := "Failed"
 	tglnow, _ := goment.New()
 	render_page := time.Now()
-	flag := false
 
 	if sData == "New" {
-		flag = CheckDBTwoField(database_listpatterndetail_local, "idlistpattern", idlistpattern, "idpattern", idpattern)
-		if !flag {
-			sql_insert := `
+		sql_insert := `
 					insert into
 					` + database_listpatterndetail_local + ` (
-						idlistpatterndetail ,idlistpattern, idpattern, 
+						idlistpatterndetail ,idlistpattern, status_card, idpoin,  
 						create_listpatterndetail, createdate_listpatterndetail 
 					) values (
-						$1, $2, $3,      
-						$4, $5   
+						$1, $2, $3, $4,       
+						$5, $6    
 					)
 				`
-			field_column := database_listpatterndetail_local + tglnow.Format("YYYY")
-			idrecord_counter := Get_counter(field_column)
-			flag_insert, msg_insert := Exec_SQL(sql_insert, database_listpatterndetail_local, "INSERT",
-				idrecord_counter, idlistpattern, idpattern,
-				admin, tglnow.Format("YYYY-MM-DD HH:mm:ss"))
+		field_column := database_listpatterndetail_local + tglnow.Format("YYYY")
+		idrecord_counter := Get_counter(field_column)
+		flag_insert, msg_insert := Exec_SQL(sql_insert, database_listpatterndetail_local, "INSERT",
+			tglnow.Format("YY")+strconv.Itoa(idrecord_counter), idlistpattern, status, idpoin,
+			admin, tglnow.Format("YYYY-MM-DD HH:mm:ss"))
 
-			if flag_insert {
-				msg = "Succes"
-			} else {
-				fmt.Println(msg_insert)
-			}
+		if flag_insert {
+			msg = "Succes"
 		} else {
-			msg = "Duplicate Entry"
+			fmt.Println(msg_insert)
 		}
 	}
 
@@ -277,23 +284,39 @@ func Save_listpatterndetail(admin, idlistpattern, idpattern, sData string) (help
 
 	return res, nil
 }
-func Delete_listpatterndetail(idrecord int) (helpers.Response, error) {
+func Delete_listpatterndetail(idrecord int, tipe, idlistpatter string) (helpers.Response, error) {
 	var res helpers.Response
 	msg := "Failed"
 	render_page := time.Now()
 
-	sql_delete := `
+	if tipe == "ALL" {
+		sql_delete := `
+				DELETE FROM
+				` + database_listpatterndetail_local + ` 
+				WHERE idlistpattern=$1 
+			`
+
+		flag_episode, msg_episode := Exec_SQL(sql_delete, database_listpatterndetail_local, "DELETE", idlistpatter)
+
+		if flag_episode {
+			msg = "Succes"
+		} else {
+			log.Println(msg_episode)
+		}
+	} else {
+		sql_delete := `
 				DELETE FROM
 				` + database_listpatterndetail_local + ` 
 				WHERE idlistpatterndetail=$1 
 			`
 
-	flag_episode, msg_episode := Exec_SQL(sql_delete, database_listpatterndetail_local, "DELETE", idrecord)
+		flag_episode, msg_episode := Exec_SQL(sql_delete, database_listpatterndetail_local, "DELETE", idrecord)
 
-	if flag_episode {
-		msg = "Succes"
-	} else {
-		log.Println(msg_episode)
+		if flag_episode {
+			msg = "Succes"
+		} else {
+			log.Println(msg_episode)
+		}
 	}
 
 	res.Status = fiber.StatusOK
@@ -302,4 +325,25 @@ func Delete_listpatterndetail(idrecord int) (helpers.Response, error) {
 	res.Time = time.Since(render_page).String()
 
 	return res, nil
+}
+func _Get_total_listpatterndetail_losewin(idlistpattern, status string) int {
+	con := db.CreateCon()
+	ctx := context.Background()
+	total := 0
+	sql_select := `SELECT
+			COUNT(idlistpatterndetail) total 
+			FROM ` + configs.DB_tbl_trx_listpatterndetail + `  
+			WHERE idlistpattern='` + idlistpattern + `'     
+			AND status_card='` + status + `'     
+		`
+
+	row := con.QueryRowContext(ctx, sql_select)
+	switch e := row.Scan(&total); e {
+	case sql.ErrNoRows:
+	case nil:
+	default:
+		helpers.ErrorCheck(e)
+	}
+
+	return total
 }

@@ -14,6 +14,14 @@ type Responsepaging struct {
 	Totalrecord int         `json:"totalrecord"`
 	Time        string      `json:"time"`
 }
+type Responselistpatterndetail struct {
+	Status    int         `json:"status"`
+	Message   string      `json:"message"`
+	Record    interface{} `json:"record"`
+	Totalwin  int         `json:"totalwin"`
+	Totallose int         `json:"totallose"`
+	Time      string      `json:"time"`
+}
 type Responsepattern struct {
 	Status      int         `json:"status"`
 	Message     string      `json:"message"`

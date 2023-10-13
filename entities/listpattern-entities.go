@@ -3,6 +3,8 @@ package entities
 type Model_listpattern struct {
 	Listpattern_id            string `json:"listpattern_id"`
 	Listpattern_nmlistpattern string `json:"listpattern_nmlistpattern"`
+	Listpattern_totallose     int    `json:"listpattern_totallose"`
+	Listpattern_totalwin      int    `json:"listpattern_totalwin"`
 	Listpattern_status        string `json:"listpattern_status"`
 	Listpattern_status_css    string `json:"listpattern_status_css"`
 	Listpattern_create        string `json:"listpattern_create"`
@@ -10,8 +12,9 @@ type Model_listpattern struct {
 }
 type Model_listpatterndetail struct {
 	Listpatterndetail_id         int    `json:"listpatterndetail_id"`
-	Listpatterndetail_idpattern  string `json:"listpatterndetail_idpattern"`
+	Listpatterndetail_idpoin     int    `json:"listpatterndetail_idpoin"`
 	Listpatterndetail_nmpoin     string `json:"listpatterndetail_nmpoin"`
+	Listpatterndetail_poin       int    `json:"listpatterndetail_poin"`
 	Listpatterndetail_status     string `json:"listpatterndetail_status"`
 	Listpatterndetail_status_css string `json:"listpatterndetail_status_css"`
 	Listpatterndetail_create     string `json:"listpatterndetail_create"`
@@ -40,10 +43,13 @@ type Controller_listpatterndetailsave struct {
 	Page                            string `json:"page" validate:"required"`
 	Sdata                           string `json:"sdata" validate:"required"`
 	Listpatterndetail_idlistpattern string `json:"listpatterndetail_idlistpattern" validate:"required"`
-	Listpatterndetail_idpattern     string `json:"listpatterndetail_idpattern" validate:"required"`
+	Listpatterndetail_status        string `json:"listpatterndetail_status" validate:"required"`
+	Listpatterndetail_idpoin        int    `json:"listpatterndetail_idpoin" `
 }
 type Controller_listpatterndetaildelete struct {
-	Page                 string `json:"page" validate:"required"`
-	Sdata                string `json:"sdata" validate:"required"`
-	Listpatterndetail_id string `json:"listpatterndetail_id"`
+	Page                            string `json:"page" validate:"required"`
+	Sdata                           string `json:"sdata" validate:"required"`
+	Listpatterndetail_id            int    `json:"listpatterndetail_id"`
+	Listpatterndetail_idlistpattern string `json:"listpatterndetail_idlistpattern"`
+	Listpatterndetail_tipe          string `json:"listpatterndetail_tipe"`
 }

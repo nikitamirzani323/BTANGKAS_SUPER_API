@@ -62,6 +62,8 @@ func Listpatternhome(c *fiber.Ctx) error {
 	jsonparser.ArrayEach(record_RD, func(value []byte, dataType jsonparser.ValueType, offset int, err error) {
 		listpattern_id, _ := jsonparser.GetString(value, "listpattern_id")
 		listpattern_nmlistpattern, _ := jsonparser.GetString(value, "listpattern_nmlistpattern")
+		listpattern_totallose, _ := jsonparser.GetInt(value, "listpattern_totallose")
+		listpattern_totalwin, _ := jsonparser.GetInt(value, "listpattern_totalwin")
 		listpattern_status, _ := jsonparser.GetString(value, "listpattern_status")
 		listpattern_status_css, _ := jsonparser.GetString(value, "listpattern_status_css")
 		listpattern_create, _ := jsonparser.GetString(value, "listpattern_create")
@@ -69,6 +71,8 @@ func Listpatternhome(c *fiber.Ctx) error {
 
 		obj.Listpattern_id = listpattern_id
 		obj.Listpattern_nmlistpattern = listpattern_nmlistpattern
+		obj.Listpattern_totallose = int(listpattern_totallose)
+		obj.Listpattern_totalwin = int(listpattern_totalwin)
 		obj.Listpattern_status = listpattern_status
 		obj.Listpattern_status_css = listpattern_status_css
 		obj.Listpattern_create = listpattern_create
@@ -136,19 +140,23 @@ func Listpatterndetailhome(c *fiber.Ctx) error {
 	render_page := time.Now()
 	resultredis, flag := helpers.GetRedis(Fieldlistpatterndetail_home_redis + "_" + client.Listpatterndetail_idlistpattern)
 	jsonredis := []byte(resultredis)
+	totalwin_RD, _ := jsonparser.GetInt(jsonredis, "totalwin")
+	totallose_RD, _ := jsonparser.GetInt(jsonredis, "totallose")
 	record_RD, _, _, _ := jsonparser.Get(jsonredis, "record")
 	jsonparser.ArrayEach(record_RD, func(value []byte, dataType jsonparser.ValueType, offset int, err error) {
 		listpatterndetail_id, _ := jsonparser.GetInt(value, "listpatterndetail_id")
-		listpatterndetail_idpattern, _ := jsonparser.GetString(value, "listpatterndetail_idpattern")
+		listpatterndetail_idpoin, _ := jsonparser.GetInt(value, "listpatterndetail_idpoin")
 		listpatterndetail_nmpoin, _ := jsonparser.GetString(value, "listpatterndetail_nmpoin")
+		listpatterndetail_poin, _ := jsonparser.GetInt(value, "listpatterndetail_poin")
 		listpatterndetail_status, _ := jsonparser.GetString(value, "listpatterndetail_status")
 		listpatterndetail_status_css, _ := jsonparser.GetString(value, "listpatterndetail_status_css")
 		listpatterndetail_create, _ := jsonparser.GetString(value, "listpatterndetail_create")
 		listpatterndetail_update, _ := jsonparser.GetString(value, "listpatterndetail_update")
 
 		obj.Listpatterndetail_id = int(listpatterndetail_id)
-		obj.Listpatterndetail_idpattern = listpatterndetail_idpattern
+		obj.Listpatterndetail_idpoin = int(listpatterndetail_idpoin)
 		obj.Listpatterndetail_nmpoin = listpatterndetail_nmpoin
+		obj.Listpatterndetail_poin = int(listpatterndetail_poin)
 		obj.Listpatterndetail_status = listpatterndetail_status
 		obj.Listpatterndetail_status_css = listpatterndetail_status_css
 		obj.Listpatterndetail_create = listpatterndetail_create
@@ -173,10 +181,12 @@ func Listpatterndetailhome(c *fiber.Ctx) error {
 	} else {
 		fmt.Println("LISTPATTERNDETAIL CACHE")
 		return c.JSON(fiber.Map{
-			"status":  fiber.StatusOK,
-			"message": "Success",
-			"record":  arraobj,
-			"time":    time.Since(render_page).String(),
+			"status":    fiber.StatusOK,
+			"message":   "Success",
+			"record":    arraobj,
+			"totalwin":  totalwin_RD,
+			"totallose": totallose_RD,
+			"time":      time.Since(render_page).String(),
 		})
 	}
 }
@@ -264,10 +274,59 @@ func ListpatterndetailSave(c *fiber.Ctx) error {
 	temp_decp := helpers.Decryption(name)
 	client_admin, _ := helpers.Parsing_Decry(temp_decp, "==")
 
-	// admin, idlistpattern, idpattern, sData string
+	// admin, idlistpattern, status, sData string, idpoin int
 	result, err := models.Save_listpatterndetail(
 		client_admin,
-		client.Listpatterndetail_idlistpattern, client.Listpatterndetail_idpattern, client.Sdata)
+		client.Listpatterndetail_idlistpattern, client.Listpatterndetail_status, client.Sdata, client.Listpatterndetail_idpoin)
+	if err != nil {
+		c.Status(fiber.StatusBadRequest)
+		return c.JSON(fiber.Map{
+			"status":  fiber.StatusBadRequest,
+			"message": err.Error(),
+			"record":  nil,
+		})
+	}
+
+	_deleteredis_listpattern(client.Listpatterndetail_idlistpattern, "", "", 0)
+	return c.JSON(result)
+}
+func ListpatterndetailDelete(c *fiber.Ctx) error {
+	var errors []*helpers.ErrorResponse
+	client := new(entities.Controller_listpatterndetaildelete)
+	validate := validator.New()
+	if err := c.BodyParser(client); err != nil {
+		c.Status(fiber.StatusBadRequest)
+		return c.JSON(fiber.Map{
+			"status":  fiber.StatusBadRequest,
+			"message": err.Error(),
+			"record":  nil,
+		})
+	}
+
+	err := validate.Struct(client)
+	if err != nil {
+		for _, err := range err.(validator.ValidationErrors) {
+			var element helpers.ErrorResponse
+			element.Field = err.StructField()
+			element.Tag = err.Tag()
+			errors = append(errors, &element)
+		}
+		c.Status(fiber.StatusBadRequest)
+		return c.JSON(fiber.Map{
+			"status":  fiber.StatusBadRequest,
+			"message": "validation",
+			"record":  errors,
+		})
+	}
+	// user := c.Locals("jwt").(*jwt.Token)
+	// claims := user.Claims.(jwt.MapClaims)
+	// name := claims["name"].(string)
+	// temp_decp := helpers.Decryption(name)
+	// _, _ := helpers.Parsing_Decry(temp_decp, "==")
+
+	// idrecord int, tipe, idlistpatter string
+	result, err := models.Delete_listpatterndetail(
+		client.Listpatterndetail_id, client.Listpatterndetail_tipe, client.Listpatterndetail_idlistpattern)
 	if err != nil {
 		c.Status(fiber.StatusBadRequest)
 		return c.JSON(fiber.Map{
