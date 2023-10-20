@@ -412,6 +412,83 @@ func Fetch_companyadminByCompany(idcompany string) (helpers.Response, error) {
 
 	return res, nil
 }
+func Fetch_companyInvoice(idcompany, startdate, enddate string) (helpers.Response, error) {
+	var obj entities.Model_company_invoice
+	var arraobj []entities.Model_company_invoice
+	var res helpers.Response
+	msg := "Data Not Found"
+	con := db.CreateCon()
+	ctx := context.Background()
+	start := time.Now()
+
+	_, _, tbl_trx_transaksi, _ := Get_mappingdatabase(idcompany)
+
+	sql_select := ""
+	sql_select += "SELECT "
+	sql_select += "idtransaksi, username_client, roundbet,total_bet,total_win,total_bonus, "
+	sql_select += "card_codepoin,card_pattern,card_result,card_win, "
+	sql_select += "create_transaksi, to_char(COALESCE(createdate_transaksi,now()), 'YYYY-MM-DD HH24:MI:SS'),  "
+	sql_select += "update_transaksi, to_char(COALESCE(updatedate_transaksi,now()), 'YYYY-MM-DD HH24:MI:SS')  "
+	sql_select += "FROM " + tbl_trx_transaksi + " "
+	sql_select += "WHERE idcompany='" + idcompany + "' "
+	sql_select += "ORDER BY createdate_transaksi DESC "
+
+	row, err := con.QueryContext(ctx, sql_select)
+	helpers.ErrorCheck(err)
+	for row.Next() {
+		var (
+			idtransaksi_db, username_client_db                                                         string
+			roundbet_db, total_bet_db, total_win_db, total_bonus_db                                    int
+			card_codepoin_db, card_pattern_db, card_result_db, card_win_db                             string
+			create_transaksi_db, createdate_transaksi_db, update_transaksi_db, updatedate_transaksi_db string
+		)
+
+		err = row.Scan(&idtransaksi_db, &username_client_db,
+			&roundbet_db, &total_bet_db, &total_win_db, &total_bonus_db,
+			&card_codepoin_db, &card_pattern_db, &card_result_db, &card_win_db,
+			&create_transaksi_db, &createdate_transaksi_db, &update_transaksi_db, &updatedate_transaksi_db)
+
+		helpers.ErrorCheck(err)
+		create := ""
+		update := ""
+		status := "LOSE"
+		status_css := configs.STATUS_CANCEL
+		if create_transaksi_db != "" {
+			create = create_transaksi_db + ", " + createdate_transaksi_db
+		}
+		if update_transaksi_db != "" {
+			update = update_transaksi_db + ", " + update_transaksi_db
+		}
+		if card_win_db != "" {
+			status = "WIN"
+			status_css = configs.STATUS_COMPLETE
+		}
+		obj.Companyinvoice_id = idtransaksi_db
+		obj.Companyinvoice_username = username_client_db
+		obj.Companyinvoice_roundbet = roundbet_db
+		obj.Companyinvoice_totalbet = total_bet_db
+		obj.Companyinvoice_totalwin = total_win_db
+		obj.Companyinvoice_totalbonus = total_bonus_db
+		obj.Companyinvoice_card_codepoin = card_codepoin_db
+		obj.Companyinvoice_card_pattern = card_pattern_db
+		obj.Companyinvoice_card_result = card_result_db
+		obj.Companyinvoice_card_win = card_win_db
+		obj.Companyinvoice_status = status
+		obj.Companyinvoice_status_css = status_css
+		obj.Companyinvoice_create = create
+		obj.Companyinvoice_update = update
+		arraobj = append(arraobj, obj)
+		msg = "Success"
+	}
+	defer row.Close()
+
+	res.Status = fiber.StatusOK
+	res.Message = msg
+	res.Record = arraobj
+	res.Time = time.Since(start).String()
+
+	return res, nil
+}
 func Fetch_companyListBet(idcompany string) (helpers.Response, error) {
 	var obj entities.Model_company_listbet
 	var arraobj []entities.Model_company_listbet
@@ -421,7 +498,7 @@ func Fetch_companyListBet(idcompany string) (helpers.Response, error) {
 	ctx := context.Background()
 	start := time.Now()
 
-	tbl_mst_listbet, _ := Get_mappingdatabase(idcompany)
+	tbl_mst_listbet, _, _, _ := Get_mappingdatabase(idcompany)
 
 	sql_select := `SELECT 
 			idbet_listbet, minbet_listbet, 
@@ -476,7 +553,7 @@ func Fetch_companyConfPoint(idbet int, idcompany string) (helpers.Response, erro
 	ctx := context.Background()
 	start := time.Now()
 
-	_, tbl_mst_config := Get_mappingdatabase(idcompany)
+	_, tbl_mst_config, _, _ := Get_mappingdatabase(idcompany)
 
 	sql_select := `SELECT 
 			A.idconf_conf, A.idbet_listbet, A.idpoin, A.poin_conf,  
@@ -764,7 +841,7 @@ func Save_companyListBet(admin, idcompany, sData string, idrecord, minbet int) (
 	tglnow, _ := goment.New()
 	render_page := time.Now()
 	flag := false
-	tbl_mst_listbet, _ := Get_mappingdatabase(idcompany)
+	tbl_mst_listbet, _, _, _ := Get_mappingdatabase(idcompany)
 
 	if sData == "New" {
 		flag = CheckDBTwoField(tbl_mst_listbet, "idcompany", idcompany, "minbet_listbet", strconv.Itoa(minbet))
@@ -830,7 +907,7 @@ func Save_companyConfPoint(admin, idcompany, sData string, idrecord, idbet, poin
 	render_page := time.Now()
 	flag := false
 
-	_, tbl_mst_config := Get_mappingdatabase(idcompany)
+	_, tbl_mst_config, _, _ := Get_mappingdatabase(idcompany)
 
 	if sData == "New" {
 		sql_select := `SELECT 

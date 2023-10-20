@@ -15,6 +15,7 @@ import (
 )
 
 const Fieldcompany_home_redis = "COMPANY_BACKEND"
+const Fieldcompanyinvoice_home_redis = "COMPANYINVOICE_BACKEND"
 const Fieldcompanylistbet_home_redis = "COMPANYLISTBET_BACKEND"
 const Fieldcompanyconf_home_redis = "COMPANYCONF_BACKEND"
 const Fieldcompanyadminrule_home_redis = "COMPANYADMINRULE_BACKEND"
@@ -324,6 +325,97 @@ func CompanyadminByCompany(c *fiber.Ctx) error {
 		return c.JSON(result)
 	} else {
 		fmt.Println("COMPANY ADMIN BY COMPANY CACHE")
+		return c.JSON(fiber.Map{
+			"status":  fiber.StatusOK,
+			"message": "Success",
+			"record":  arraobj,
+			"time":    time.Since(render_page).String(),
+		})
+	}
+}
+func Companyinvoice(c *fiber.Ctx) error {
+	var errors []*helpers.ErrorResponse
+	client := new(entities.Controller_companyinvoice)
+	validate := validator.New()
+	if err := c.BodyParser(client); err != nil {
+		c.Status(fiber.StatusBadRequest)
+		return c.JSON(fiber.Map{
+			"status":  fiber.StatusBadRequest,
+			"message": err.Error(),
+			"record":  nil,
+		})
+	}
+	fmt.Println(client.Company_id)
+	err := validate.Struct(client)
+	if err != nil {
+		for _, err := range err.(validator.ValidationErrors) {
+			var element helpers.ErrorResponse
+			element.Field = err.StructField()
+			element.Tag = err.Tag()
+			errors = append(errors, &element)
+		}
+		c.Status(fiber.StatusBadRequest)
+		return c.JSON(fiber.Map{
+			"status":  fiber.StatusBadRequest,
+			"message": "validation",
+			"record":  errors,
+		})
+	}
+
+	var obj entities.Model_company_invoice
+	var arraobj []entities.Model_company_invoice
+	render_page := time.Now()
+	resultredis, flag := helpers.GetRedis(Fieldcompanyinvoice_home_redis + "_" + client.Company_id)
+	jsonredis := []byte(resultredis)
+	record_RD, _, _, _ := jsonparser.Get(jsonredis, "record")
+	jsonparser.ArrayEach(record_RD, func(value []byte, dataType jsonparser.ValueType, offset int, err error) {
+		companyinvoice_id, _ := jsonparser.GetString(value, "companyinvoice_id")
+		companyinvoice_username, _ := jsonparser.GetString(value, "companyinvoice_username")
+		companyinvoice_roundbet, _ := jsonparser.GetInt(value, "companyinvoice_roundbet")
+		companyinvoice_totalbet, _ := jsonparser.GetInt(value, "companyinvoice_totalbet")
+		companyinvoice_totalwin, _ := jsonparser.GetInt(value, "companyinvoice_totalwin")
+		companyinvoice_totalbonus, _ := jsonparser.GetInt(value, "companyinvoice_totalbonus")
+		companyinvoice_card_codepoin, _ := jsonparser.GetString(value, "companyinvoice_card_codepoin")
+		companyinvoice_card_pattern, _ := jsonparser.GetString(value, "companyinvoice_card_pattern")
+		companyinvoice_card_result, _ := jsonparser.GetString(value, "companyinvoice_card_result")
+		companyinvoice_card_win, _ := jsonparser.GetString(value, "companyinvoice_card_win")
+		companyinvoice_status, _ := jsonparser.GetString(value, "companyinvoice_status")
+		companyinvoice_status_css, _ := jsonparser.GetString(value, "companyinvoice_status_css")
+		companyinvoice_create, _ := jsonparser.GetString(value, "companyinvoice_create")
+		companyinvoice_update, _ := jsonparser.GetString(value, "companyinvoice_update")
+
+		obj.Companyinvoice_id = companyinvoice_id
+		obj.Companyinvoice_username = companyinvoice_username
+		obj.Companyinvoice_roundbet = int(companyinvoice_roundbet)
+		obj.Companyinvoice_totalbet = int(companyinvoice_totalbet)
+		obj.Companyinvoice_totalwin = int(companyinvoice_totalwin)
+		obj.Companyinvoice_totalbonus = int(companyinvoice_totalbonus)
+		obj.Companyinvoice_card_codepoin = companyinvoice_card_codepoin
+		obj.Companyinvoice_card_pattern = companyinvoice_card_pattern
+		obj.Companyinvoice_card_result = companyinvoice_card_result
+		obj.Companyinvoice_card_win = companyinvoice_card_win
+		obj.Companyinvoice_status = companyinvoice_status
+		obj.Companyinvoice_status_css = companyinvoice_status_css
+		obj.Companyinvoice_create = companyinvoice_create
+		obj.Companyinvoice_update = companyinvoice_update
+		arraobj = append(arraobj, obj)
+	})
+
+	if !flag {
+		result, err := models.Fetch_companyInvoice(client.Company_id, client.Company_startdate, client.Company_enddate)
+		if err != nil {
+			c.Status(fiber.StatusBadRequest)
+			return c.JSON(fiber.Map{
+				"status":  fiber.StatusBadRequest,
+				"message": err.Error(),
+				"record":  nil,
+			})
+		}
+		helpers.SetRedis(Fieldcompanyinvoice_home_redis+"_"+client.Company_id, result, 60*time.Minute)
+		fmt.Println("COMPANY INVOICE MYSQL")
+		return c.JSON(result)
+	} else {
+		fmt.Println("COMPANY INVOICE CACHE")
 		return c.JSON(fiber.Map{
 			"status":  fiber.StatusOK,
 			"message": "Success",

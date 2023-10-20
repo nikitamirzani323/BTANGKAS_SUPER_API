@@ -15,6 +15,22 @@ type Model_company struct {
 	Company_create     string `json:"company_create"`
 	Company_update     string `json:"company_update"`
 }
+type Model_company_invoice struct {
+	Companyinvoice_id            string `json:"companyinvoice_id"`
+	Companyinvoice_username      string `json:"companyinvoice_username"`
+	Companyinvoice_roundbet      int    `json:"companyinvoice_roundbet"`
+	Companyinvoice_totalbet      int    `json:"companyinvoice_totalbet"`
+	Companyinvoice_totalwin      int    `json:"companyinvoice_totalwin"`
+	Companyinvoice_totalbonus    int    `json:"companyinvoice_totalbonus"`
+	Companyinvoice_card_codepoin string `json:"companyinvoice_card_codepoin"`
+	Companyinvoice_card_pattern  string `json:"companyinvoice_card_pattern"`
+	Companyinvoice_card_result   string `json:"companyinvoice_card_result"`
+	Companyinvoice_card_win      string `json:"companyinvoice_card_win"`
+	Companyinvoice_status        string `json:"companyinvoice_status"`
+	Companyinvoice_status_css    string `json:"companyinvoice_status_css"`
+	Companyinvoice_create        string `json:"companyinvoice_create"`
+	Companyinvoice_update        string `json:"companyinvoice_update"`
+}
 type Model_company_listbet struct {
 	Companylistbet_id     int     `json:"companylistbet_id"`
 	Companylistbet_minbet float64 `json:"companylistbet_minbet"`
@@ -54,6 +70,11 @@ type Controller_companylistbetsave struct {
 	Companylistbet_id        int    `json:"companylistbet_id"`
 	Companylistbet_idcompany string `json:"companylistbet_idcompany" validate:"required"`
 	Companylistbet_minbet    int    `json:"companylistbet_minbet" validate:"required"`
+}
+type Controller_companyinvoice struct {
+	Company_id        string `json:"company_id" validate:"required"`
+	Company_startdate string `json:"company_startdate" `
+	Company_enddate   string `json:"company_enddate" `
 }
 type Controller_companylistbet struct {
 	Company_id string `json:"company_id" validate:"required"`
