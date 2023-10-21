@@ -329,14 +329,19 @@ func PatternSavemanual(c *fiber.Ctx) error {
 		})
 	}
 
-	_deleteredis_pattern(client.Pattern_search, client.Pattern_search_status, client.Pattern_page)
+	_deleteredis_pattern(client.Pattern_codepoin, client.Pattern_status, client.Pattern_page)
 	return c.JSON(result)
 }
 func _deleteredis_pattern(search, status string, page int) {
 	val_master := helpers.DeleteRedis(Fieldpattern_home_redis + "_" + strconv.Itoa(page) + "_" + search + "_" + status)
 	fmt.Printf("Redis Delete BACKEND PATTERN : %d\n", val_master)
 
+	val_master_bypoin := helpers.DeleteRedis(Fieldpattern_home_redis + "_" + strconv.Itoa(page) + "_" + search)
+	fmt.Printf("Redis Delete BACKEND PATTERN BY CODE : %d\n", val_master_bypoin)
+
 	val_client := helpers.DeleteRedis(Fieldpattern_home_client_redis)
-	fmt.Printf("Redis Delete CLIENT PATTERN : %d", val_client)
+	fmt.Printf("Redis Delete CLIENT PATTERN : %d\n", val_client)
+
+	// Fieldpattern_home_redis+"_"+strconv.Itoa(client.Pattern_page)+"_"+client.Pattern_code
 
 }
