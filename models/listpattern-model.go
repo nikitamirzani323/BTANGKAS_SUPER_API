@@ -98,6 +98,7 @@ func Fetch_listpatternHome(search, status string, page int) (helpers.Responsepag
 		}
 		obj.Listpattern_id = idlistpattern_db
 		obj.Listpattern_nmlistpattern = nmlistpattern_db
+		obj.Listpattern_nmpoin = _Get_total_listpatterndetail_poin(idlistpattern_db)
 		obj.Listpattern_totallose = _Get_total_listpatterndetail_losewin(idlistpattern_db, "N")
 		obj.Listpattern_totalwin = _Get_total_listpatterndetail_losewin(idlistpattern_db, "Y")
 		obj.Listpattern_status = status_listpattern_db
@@ -346,4 +347,59 @@ func _Get_total_listpatterndetail_losewin(idlistpattern, status string) int {
 	}
 
 	return total
+}
+func _Get_total_listpatterndetail_poin(idlistpattern string) string {
+	con := db.CreateCon()
+	ctx := context.Background()
+	poin := ""
+	total := 0
+
+	sql_select_total := `SELECT
+			COUNT(idlistpatterndetail) total 
+			FROM ` + configs.DB_tbl_trx_listpatterndetail + ` as A   
+			JOIN ` + configs.DB_tbl_mst_listpoint + ` as B ON B.idpoin = A.idpoin    
+			WHERE A.idlistpattern='` + idlistpattern + `'    
+			AND A.status_card='Y'      
+			AND A.idpoin>0    
+		`
+
+	row_total := con.QueryRowContext(ctx, sql_select_total)
+	switch e := row_total.Scan(&total); e {
+	case sql.ErrNoRows:
+	case nil:
+	default:
+		helpers.ErrorCheck(e)
+	}
+
+	sql_select := `SELECT
+			B.nmpoin  
+			FROM ` + configs.DB_tbl_trx_listpatterndetail + ` as A   
+			JOIN ` + configs.DB_tbl_mst_listpoint + ` as B ON B.idpoin = A.idpoin    
+			WHERE A.idlistpattern='` + idlistpattern + `'    
+			AND A.status_card='Y'      
+			AND A.idpoin>0      
+		`
+
+	row, err := con.QueryContext(ctx, sql_select)
+	helpers.ErrorCheck(err)
+	no := 0
+	for row.Next() {
+		no = no + 1
+		var (
+			nmpoin_db string
+		)
+
+		err = row.Scan(&nmpoin_db)
+
+		helpers.ErrorCheck(err)
+		if no == total {
+			poin += nmpoin_db
+		} else {
+			poin += nmpoin_db + ", "
+		}
+
+	}
+	defer row.Close()
+
+	return poin
 }

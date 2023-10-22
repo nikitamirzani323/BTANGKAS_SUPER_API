@@ -3,6 +3,7 @@ package entities
 type Model_listpattern struct {
 	Listpattern_id            string `json:"listpattern_id"`
 	Listpattern_nmlistpattern string `json:"listpattern_nmlistpattern"`
+	Listpattern_nmpoin        string `json:"listpattern_nmpoin"`
 	Listpattern_totallose     int    `json:"listpattern_totallose"`
 	Listpattern_totalwin      int    `json:"listpattern_totalwin"`
 	Listpattern_status        string `json:"listpattern_status"`

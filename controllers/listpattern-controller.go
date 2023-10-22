@@ -62,6 +62,7 @@ func Listpatternhome(c *fiber.Ctx) error {
 	jsonparser.ArrayEach(record_RD, func(value []byte, dataType jsonparser.ValueType, offset int, err error) {
 		listpattern_id, _ := jsonparser.GetString(value, "listpattern_id")
 		listpattern_nmlistpattern, _ := jsonparser.GetString(value, "listpattern_nmlistpattern")
+		listpattern_nmpoin, _ := jsonparser.GetString(value, "listpattern_nmpoin")
 		listpattern_totallose, _ := jsonparser.GetInt(value, "listpattern_totallose")
 		listpattern_totalwin, _ := jsonparser.GetInt(value, "listpattern_totalwin")
 		listpattern_status, _ := jsonparser.GetString(value, "listpattern_status")
@@ -71,6 +72,7 @@ func Listpatternhome(c *fiber.Ctx) error {
 
 		obj.Listpattern_id = listpattern_id
 		obj.Listpattern_nmlistpattern = listpattern_nmlistpattern
+		obj.Listpattern_nmpoin = listpattern_nmpoin
 		obj.Listpattern_totallose = int(listpattern_totallose)
 		obj.Listpattern_totalwin = int(listpattern_totalwin)
 		obj.Listpattern_status = listpattern_status
