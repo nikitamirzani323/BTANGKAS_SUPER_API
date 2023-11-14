@@ -431,7 +431,7 @@ func Fetch_companyInvoice(idcompany, startdate, enddate string) (helpers.Respons
 	sql_select += "update_transaksi, to_char(COALESCE(updatedate_transaksi,now()), 'YYYY-MM-DD HH24:MI:SS')  "
 	sql_select += "FROM " + tbl_trx_transaksi + " "
 	sql_select += "WHERE idcompany='" + idcompany + "' "
-	sql_select += "ORDER BY createdate_transaksi DESC "
+	sql_select += "ORDER BY createdate_transaksi DESC LIMIT 500"
 
 	row, err := con.QueryContext(ctx, sql_select)
 	helpers.ErrorCheck(err)
